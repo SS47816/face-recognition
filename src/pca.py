@@ -1,10 +1,10 @@
 import os
-import math
 import numpy as np
 import cv2
-import torch
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 
-def getPCAResults(imgs, sort=True):
+def getPCAResults(img_vecs, sort=True):
     """
     Compute PCA based on the input img.
 
@@ -14,13 +14,7 @@ def getPCAResults(imgs, sort=True):
     eigenvalues: np.ndarray,
     mean: np.ndarray,
     """
-    # list of all the verctorized images
-    img_vecs = []
-    for img in imgs:
-        # Reshape the img to a Dx1 vector
-        img_vecs.append(img.reshape((-1, 1)))
-
-    # Stack all the images together
+    # Stack all the image vectors together
     img_tensor = np.hstack(img_vecs)
     # Compute the mean
     X_mean = np.mean(img_tensor, axis=1).reshape((-1, 1))
@@ -43,7 +37,7 @@ def getPCAResults(imgs, sort=True):
 
     return eigenvectors, eigenvalues, X_mean
 
-def reconstructImages(imgs, eigenvectors, X_mean):
+def reconstructImages(img_vecs, eigenvectors, X_mean):
     """
     Compute PCA based on the input img.
     
@@ -52,9 +46,9 @@ def reconstructImages(imgs, eigenvectors, X_mean):
     rec_imgs: list[img], reconstructed imgs
     """
     rec_imgs = []
-    for img in imgs:
-        rec_img = X_mean + np.dot(eigenvectors, eigenvectors.T) * (img - X_mean)
-        rec_imgs.append(rec_img)
+    for img_vec in img_vecs:
+        rec_img = X_mean + np.dot(np.dot(eigenvectors, eigenvectors.T), (img_vec - X_mean))
+        rec_imgs.append(rec_img.reshape((32, 32)))
 
     return rec_imgs
 
@@ -69,23 +63,52 @@ def main():
     # test sample
     folder_path = 'data/train/3/'
 
-    imgs = []
+    img_vecs = []
     for img_file in os.listdir(folder_path):
-        imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE))
+        img_vecs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((-1, 1)))
 
-    # Compute eigenvectors, eigenvalues, and mean
-    eigenvectors, eigenvalues, mean = getPCAResults(imgs)
-    print(eigenvectors.shape)
-    # Get the principle vector
-    v_1 = eigenvectors[:, -1]
-    v_2 = eigenvectors[:, -2]
-    print(v_1)
-    print(v_2)
+    # # Compute eigenvectors, eigenvalues, and mean
+    # eigenvectors, eigenvalues, mean = getPCAResults(img_vecs)
+    # print(eigenvectors.shape)
+    # v_3 = eigenvectors[:, -3:]
+    # print(v_3.shape)
 
-    # Display img
-    # cv2.imshow("image", img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows() 
+    # rec_imgs = reconstructImages(img_vecs, v_3, mean)
+    #     for rec_img in rec_imgs:
+    #     # Display img
+    #     cv2.imshow("Reconstructed image", rec_img)
+    #     cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    # Stack image vectors together
+    img_tensor = np.hstack(img_vecs)
+    print(img_tensor.shape)
+
+    # Apply PCA on 2D and 3D
+    pca_2 = PCA(2)
+    proj_imgs_2d = pca_2.fit_transform(img_tensor.T)
+    pca_3 = PCA(3)
+    proj_imgs_3d = pca_3.fit_transform(img_tensor.T)
+    
+    print(proj_imgs_2d.shape)
+    print(proj_imgs_3d.shape)
+
+    # Visualize data
+    plt.style.use('seaborn-whitegrid')
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    c_map = plt.cm.get_cmap('jet', 10)
+    # 2D subplot
+    ax = fig.add_subplot(1, 2, 1)
+    ax.scatter(proj_imgs_2d[:, 0], proj_imgs_2d[:, 1], s = 15, cmap = c_map)
+    ax.set_xlabel('Principle Axis 1')
+    ax.set_ylabel('Principle Axis 2')
+    # 3D subplot
+    ax = fig.add_subplot(1, 2, 2, projection='3d')
+    ax.scatter(proj_imgs_3d[:, 0], proj_imgs_3d[:, 1], proj_imgs_3d[:, 2], s = 15, cmap = c_map)
+    ax.set_xlabel('Principle Axis 1')
+    ax.set_ylabel('Principle Axis 2')
+    ax.set_zlabel('Principle Axis 3')
+    plt.show()
 
 if __name__ == "__main__":
     main()
