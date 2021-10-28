@@ -1,5 +1,6 @@
 PIE/
 PIE.zip
+*.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
