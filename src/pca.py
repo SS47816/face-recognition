@@ -5,10 +5,14 @@ import cv2
 import torch
 
 def getPCAResults(imgs, sort=True):
-    """Compute PCA based on the input img.
-    Return: 
-        float: mean
-        float: 
+    """
+    Compute PCA based on the input img.
+
+    Returns
+    -------
+    eigenvectors: np.ndarray,
+    eigenvalues: np.ndarray,
+    mean: np.ndarray,
     """
     # list of all the verctorized images
     img_vecs = []
@@ -31,6 +35,7 @@ def getPCAResults(imgs, sort=True):
     # SVD decomposition
     eigenvectors, eigenvalues, _ = np.linalg.svd(S)
 
+    # Sort eigenvectors and eigenvalues in ascending order
     if sort:
         sort = eigenvalues.argsort()[::-1]
         eigenvalues = eigenvalues[sort]
@@ -38,9 +43,32 @@ def getPCAResults(imgs, sort=True):
 
     return eigenvectors, eigenvalues, X_mean
 
+def reconstructImages(imgs, eigenvectors, X_mean):
+    """
+    Compute PCA based on the input img.
+    
+    Returns
+    -------
+    rec_imgs: list[img], reconstructed imgs
+    """
+    rec_imgs = []
+    for img in imgs:
+        rec_img = X_mean + np.dot(eigenvectors, eigenvectors.T) * (img - X_mean)
+        rec_imgs.append(rec_img)
+
+    return rec_imgs
+
 
 def main():
-    folder_path = 'data/PIE/1/'
+    
+    # Set destination paths
+    repo_path = '/Users/ss/ss_ws/face-recognition/'
+    train_set_path = os.path.join(repo_path, 'data/train')
+    test_set_path = os.path.join(repo_path, 'data/test')
+
+    # test sample
+    folder_path = 'data/train/3/'
+
     imgs = []
     for img_file in os.listdir(folder_path):
         imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE))
@@ -50,7 +78,9 @@ def main():
     print(eigenvectors.shape)
     # Get the principle vector
     v_1 = eigenvectors[:, -1]
-    print(v_1.shape)
+    v_2 = eigenvectors[:, -2]
+    print(v_1)
+    print(v_2)
 
     # Display img
     # cv2.imshow("image", img)
