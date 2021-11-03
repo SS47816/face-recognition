@@ -10,12 +10,12 @@ def main():
     plot_pca_result = False
 
     # Set destination paths
-    repo_path = '/Users/ss/ss_ws/face-recognition/'
+    repo_path = '/home/ss/ss_ws/face-recognition/'
     train_set_path = os.path.join(repo_path, 'data/train')
     test_set_path = os.path.join(repo_path, 'data/test')
 
     # test sample
-    folder_path = 'data/train/3/'
+    folder_path = 'data/train/4/'
 
     # Load images from the train set
     img_vecs = []
