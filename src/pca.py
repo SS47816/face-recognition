@@ -7,39 +7,8 @@ import matplotlib.pyplot as plt
 
 def readImageData(data_path, set='train', num_PIE_imgs=-1):
     
-    # List all subjects in set
-    set_path = os.path.join(data_path, set)
-    subject_paths = os.listdir(set_path)
-
-    # Within each subject of the PIE dataset, read all images
-    PIE_imgs = []
-    my_imgs = []
-    for subject_path in subject_paths:
-        folder_path = os.path.join(set_path, subject_path)
-        if subject_path == '.DS_Store':
-            continue
-        elif subject_path == 'my_photo':
-            # Load my_photo images 
-            for img_file in os.listdir(folder_path):
-                my_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
-        else:
-            # Load PIE images 
-            for img_file in os.listdir(folder_path):
-                PIE_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
-    
-    # Randomly Select a given number of samples from the PIE set
-    selected_PIE_imgs = random.sample(PIE_imgs, num_PIE_imgs)
-
-    print('Read %d PIE images from %s' % (len(selected_PIE_imgs), set))
-    print('Read %d my_photo from %s' % (len(my_imgs), set))
-
-    return selected_PIE_imgs, my_imgs
-
-
-def main():
-    
     # Display Settings
-    plot_pca_result = False     # If we want to plot the PCA results
+    plot_pca_result = True      # If we want to plot the PCA results
     show_num_imgs = 5           # Number of example results to display after done, `0` for no output
 
     # Set destination paths
@@ -49,14 +18,15 @@ def main():
     PIE_train_imgs, my_train_imgs = readImageData(data_path, set='train', num_PIE_imgs=500)
 
     # Stack image vectors together
-    img_tensor = np.vstack(PIE_train_imgs)
-    print(img_tensor.shape)
+    PIE_train_imgs.extend(my_train_imgs)
+    X_train = np.vstack(PIE_train_imgs)
+    print(X_train.shape)
 
     # Apply PCA on 2D and 3D
     pca_2 = PCA(2)
-    proj_imgs_2d = pca_2.fit_transform(img_tensor)
+    proj_imgs_2d = pca_2.fit_transform(X_train)
     pca_3 = PCA(3)
-    proj_imgs_3d = pca_3.fit_transform(img_tensor)
+    proj_imgs_3d = pca_3.fit_transform(X_train)
 
     # Visualize data
     if plot_pca_result:
@@ -77,6 +47,14 @@ def main():
         ax.set_zlabel('Principle Axis 3')
         plt.show()
 
+        # Plot the mean face and eigen faces
+        fig = plt.figure(figsize=(16, 6))
+        ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
+        ax.imshow(pca_3.mean_.reshape((32, 32)), cmap='gray')
+        for i in range(3):
+            ax = fig.add_subplot(1, 4, i + 2, xticks=[], yticks=[])
+            ax.imshow(pca_3.components_[i].reshape((32, 32)), cmap='gray')
+        plt.show()
 
     # Apply PCA with 40, 80, and 200 Dimensions
     Dimensions = [40, 80, 200]
@@ -87,7 +65,7 @@ def main():
     for i in range(len(Dimensions)):
         pca_list.append(PCA(Dimensions[i]))
         # Fit PCA on the images
-        proj_imgs_list.append(pca_list[i].fit_transform(img_tensor))
+        proj_imgs_list.append(pca_list[i].fit_transform(X_train))
         # Reconstruct the images
         rec_imgs_list.append(pca_list[i].inverse_transform(proj_imgs_list[i]))
 
@@ -97,11 +75,11 @@ def main():
     # Visualize reconstructed images
     if show_num_imgs > 0:
         print('Showing %d example results here' % show_num_imgs)
-        for i in range(img_tensor.shape[0]):
+        for i in range(X_train.shape[0]):
             if (i < show_num_imgs):
                 fig, axs = plt.subplots(1, 4)
                 axs[0].title.set_text('Original')
-                axs[0].imshow(img_tensor[i, :].reshape((32, 32)), cmap='gray')
+                axs[0].imshow(X_train[i, :].reshape((32, 32)), cmap='gray')
                 axs[1].title.set_text('D = 40')
                 axs[1].imshow(rec_imgs_list[0][i, :].reshape((32, 32)), cmap='gray')
                 axs[2].title.set_text('D = 80')
