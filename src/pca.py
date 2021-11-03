@@ -8,6 +8,7 @@ def main():
     
     # Settings
     plot_pca_result = False
+    show_rec_imgs = False
 
     # Set destination paths
     repo_path = '/Users/ss/ss_ws/face-recognition/'
@@ -51,20 +52,41 @@ def main():
         ax.set_zlabel('Principle Axis 3')
         plt.show()
 
+
+    # Apply PCA with 40, 80, and 200 Ds
+    Dimensions = [40, 80, 200]
+    pca_list = []
+    proj_imgs_list = []
+
+    for i in range(len(Dimensions)):
+        pca_list.append(PCA(Dimensions[i]))
+        proj_imgs_list.append(pca_list[i].fit_transform(img_tensor))
+
+    print(proj_imgs_list[2].shape)
     # Reconstruct the images
-    rec_imgs_2d = pca_2.inverse_transform(proj_imgs_2d)
-    rec_imgs_3d = pca_3.inverse_transform(proj_imgs_3d)
-    print(proj_imgs_3d.shape)
-    print(rec_imgs_3d.shape)
+    # rec_imgs_2d = pca_2.inverse_transform(proj_imgs_2d)
+    # rec_imgs_3d = pca_3.inverse_transform(proj_imgs_3d)
+    # print(proj_imgs_3d.shape)
+    # print(rec_imgs_3d.shape)
 
     # cv2.imshow('reconstructed image', rec_imgs_3d[1, :].reshape((32, 32)))
     # cv2.waitKey(0)
-    for i in range(img_tensor.shape[0]):
-        fig, axs = plt.subplots(1, 3)
-        axs[0].imshow(img_tensor[i, :].reshape((32, 32)), cmap='gray')
-        axs[1].imshow(rec_imgs_2d[i, :].reshape((32, 32)), cmap='gray')
-        axs[2].imshow(rec_imgs_3d[i, :].reshape((32, 32)), cmap='gray')
-        plt.show()
+
+    # Visualize reconstructed images
+    if show_rec_imgs:
+        for i in range(img_tensor.shape[0]):
+            fig, axs = plt.subplots(1, 4)
+            axs[0].title.set_text('Original')
+            axs[0].imshow(img_tensor[i, :].reshape((32, 32)), cmap='gray')
+            axs[1].title.set_text('D = 2')
+            axs[1].imshow(rec_imgs_2d[i, :].reshape((32, 32)), cmap='gray')
+            axs[2].title.set_text('D = 3')
+            axs[2].imshow(rec_imgs_3d[i, :].reshape((32, 32)), cmap='gray')
+            axs[2].title.set_text('D = 4')
+            axs[2].imshow(rec_imgs_3d[i, :].reshape((32, 32)), cmap='gray')
+            plt.show()
+    
+    print('Done')
 
 if __name__ == "__main__":
     main()
