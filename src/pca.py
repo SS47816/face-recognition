@@ -30,7 +30,7 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1):
     # Randomly Select a given number of samples from the PIE set
     selected_PIE_imgs = random.sample(PIE_imgs, num_PIE_imgs)
 
-    print('Read %d PIE images from %s' % (num_PIE_imgs, set))
+    print('Read %d PIE images from %s' % (len(selected_PIE_imgs), set))
     print('Read %d my_photo from %s' % (len(my_imgs), set))
 
     return selected_PIE_imgs, my_imgs
@@ -79,27 +79,21 @@ def main():
         plt.show()
 
 
-    # Apply PCA with 40, 80, and 200 Ds
-    Dimensions = [40, 80, 100]
+    # Apply PCA with 40, 80, and 200 Dimensions
+    Dimensions = [40, 80, 200]
     pca_list = []
     proj_imgs_list = []
     rec_imgs_list = []
 
     for i in range(len(Dimensions)):
         pca_list.append(PCA(Dimensions[i]))
+        # Fit PCA on the images
         proj_imgs_list.append(pca_list[i].fit_transform(img_tensor))
+        # Reconstruct the images
         rec_imgs_list.append(pca_list[i].inverse_transform(proj_imgs_list[i]))
 
     print(proj_imgs_list[2].shape)
     print(rec_imgs_list[2].shape)
-    # Reconstruct the images
-    # rec_imgs_2d = pca_2.inverse_transform(proj_imgs_2d)
-    # rec_imgs_3d = pca_3.inverse_transform(proj_imgs_3d)
-    # print(proj_imgs_3d.shape)
-    # print(rec_imgs_3d.shape)
-
-    # cv2.imshow('reconstructed image', rec_imgs_3d[1, :].reshape((32, 32)))
-    # cv2.waitKey(0)
 
     # Visualize reconstructed images
     if show_rec_imgs:
