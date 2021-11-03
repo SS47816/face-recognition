@@ -4,12 +4,10 @@ import shutil
 import numpy as np
 import cv2
 
-def main():
-    # Define paths to the original PIE dataset (please modify)
-    repo_path = '/home/ss/ss_ws/face-recognition'
-    dataset_path = os.path.join(repo_path, 'data/PIE')
-    
+def splitPIEDataset(repo_path):
+
     # Set destination paths
+    dataset_path = os.path.join(repo_path, 'data/PIE')
     train_set_path = os.path.join(repo_path, 'data/train')
     test_set_path = os.path.join(repo_path, 'data/test')
     # Remove old folders at the destination (if any)
@@ -52,6 +50,14 @@ def main():
             print(test_subject_path)
             shutil.copy2(os.path.join(src, img_file), test_subject_path)
 
+def main():
+    # Define paths to the original PIE dataset (please modify)
+    repo_path = '/home/ss/ss_ws/face-recognition'
+
+    # 
+
+    # Split the PIE dataset into train and test sets
+    # splitPIEDataset(repo_path)
 
 if __name__ == "__main__":
     main()
