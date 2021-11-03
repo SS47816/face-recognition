@@ -1,8 +1,40 @@
 import os
+import random
 import numpy as np
 import cv2
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+
+def readImageData(data_path, set='train', num_PIE_imgs=-1):
+    
+    # List all subjects in set
+    set_path = os.path.join(data_path, set)
+    subject_paths = os.listdir(set_path)
+
+    # Within each subject of the PIE dataset, read all images
+    PIE_imgs = []
+    my_imgs = []
+    for subject_path in subject_paths:
+        folder_path = os.path.join(set_path, subject_path)
+        if subject_path == '.DS_Store':
+            continue
+        elif subject_path == 'my_photo':
+            # Load my_photo images 
+            for img_file in os.listdir(folder_path):
+                my_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
+        else:
+            # Load PIE images 
+            for img_file in os.listdir(folder_path):
+                PIE_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
+    
+    # Randomly Select a given number of samples from the PIE set
+    selected_PIE_imgs = random.sample(PIE_imgs, num_PIE_imgs)
+
+    print('Read %d PIE images from %s' % (num_PIE_imgs, set))
+    print('Read %d my_photo from %s' % (len(my_imgs), set))
+
+    return selected_PIE_imgs, my_imgs
+
 
 def main():
     
@@ -12,20 +44,13 @@ def main():
     show_num_imgs = 10
 
     # Set destination paths
-    repo_path = '/home/ss/ss_ws/face-recognition/'
-    train_set_path = os.path.join(repo_path, 'data/train')
-    test_set_path = os.path.join(repo_path, 'data/test')
+    data_path = '/home/ss/ss_ws/face-recognition/data'
 
-    # test sample
-    folder_path = 'data/train/4/'
-
-    # Load images from the train set
-    img_vecs = []
-    for img_file in os.listdir(folder_path):
-        img_vecs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
+    # Read 500 images from the train set
+    PIE_train_imgs, my_train_imgs = readImageData(data_path, set='train', num_PIE_imgs=500)
 
     # Stack image vectors together
-    img_tensor = np.vstack(img_vecs)
+    img_tensor = np.vstack(PIE_train_imgs)
     print(img_tensor.shape)
 
     # Apply PCA on 2D and 3D
@@ -90,6 +115,8 @@ def main():
                 axs[3].title.set_text('D = 200')
                 axs[3].imshow(rec_imgs_list[2][i, :].reshape((32, 32)), cmap='gray')
                 plt.show()
+            else:
+                break
     
     print('Done')
 
