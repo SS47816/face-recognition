@@ -39,9 +39,8 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1):
 def main():
     
     # Display Settings
-    plot_pca_result = False
-    show_rec_imgs = True
-    show_num_imgs = 10
+    plot_pca_result = False     # If we want to plot the PCA results
+    show_num_imgs = 5           # Number of example results to display after done, `0` for no output
 
     # Set destination paths
     data_path = '/home/ss/ss_ws/face-recognition/data'
@@ -58,7 +57,7 @@ def main():
     proj_imgs_2d = pca_2.fit_transform(img_tensor)
     pca_3 = PCA(3)
     proj_imgs_3d = pca_3.fit_transform(img_tensor)
-    
+
     # Visualize data
     if plot_pca_result:
         print('Visualizing Results... ')
@@ -96,7 +95,8 @@ def main():
     print(rec_imgs_list[2].shape)
 
     # Visualize reconstructed images
-    if show_rec_imgs:
+    if show_num_imgs > 0:
+        print('Showing %d example results here' % show_num_imgs)
         for i in range(img_tensor.shape[0]):
             if (i < show_num_imgs):
                 fig, axs = plt.subplots(1, 4)
@@ -111,8 +111,8 @@ def main():
                 plt.show()
             else:
                 break
-    
-    print('Done')
+
+    print('Finished PCA Processing')
 
 if __name__ == "__main__":
     main()
