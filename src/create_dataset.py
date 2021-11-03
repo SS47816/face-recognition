@@ -4,22 +4,21 @@ import shutil
 import numpy as np
 import cv2
 
-def splitPIEDataset(repo_path):
+def splitPIEDataset(dataset_path, train_set_path, test_set_path) ->  None:
     """
     Split the PIE dataset into train and test sets
 
     Parameters
     ---
-    `repo_path`: `string`, path to this repo
+    `dataset_path`: `string`, path to the PIE dataset
+    `train_set_path`: `string`, path to the output train set
+    `test_set_path`: `string`, path to the output test set
 
     Returns
     ---
     `None`
     """
-    # Set destination paths
-    dataset_path = os.path.join(repo_path, 'data/PIE')
-    train_set_path = os.path.join(repo_path, 'data/train')
-    test_set_path = os.path.join(repo_path, 'data/test')
+
     # Remove old folders at the destination (if any)
     try:
         shutil.rmtree(train_set_path)
@@ -60,7 +59,7 @@ def splitPIEDataset(repo_path):
             print(test_subject_path)
             shutil.copy2(os.path.join(src, img_file), test_subject_path)
 
-def convertRGB2BW(folder_path):
+def convertRGB2BW(folder_path) ->  None:
     """
     Convert color imgs in `folder_path` to binary imgs
 
@@ -76,18 +75,31 @@ def convertRGB2BW(folder_path):
     for img_file in img_files:
         img = cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE)
         cv2.imwrite(os.path.join(folder_path, img_file), img)
-        print('Color convertion done!')
+
+    print('Color convertion done!')
 
 def main():
-    # Define paths to the original PIE dataset (please modify)
+    # Define paths to the original PIE dataset and my_photo (please modify)
     repo_path = '/home/ss/ss_ws/face-recognition'
+    my_photo_path = os.path.join(repo_path, 'data/my_photo')
+    # Define destination paths
+    dataset_path = os.path.join(repo_path, 'data/PIE')
+    train_set_path = os.path.join(repo_path, 'data/train')
+    test_set_path = os.path.join(repo_path, 'data/test')
 
+    ###
+    # Part I, convert my photos to binary imgs and split into train and test sets
+    ###
+    
     # Convert color imgs in `/my_photo` to binary
-    folder_path = os.path.join(repo_path, 'data/my_photo')
-    convertRGB2BW(folder_path)
+    convertRGB2BW(my_photo_path)
+    # Slpit into train and test sets
+    
 
-    # Split the PIE dataset into train and test sets
-    # splitPIEDataset(repo_path)
+    ###
+    # Part II, Split the PIE dataset into train and test sets
+    ###
+    # splitPIEDataset(dataset_path, train_set_path, test_set_path)
 
 if __name__ == "__main__":
     main()
