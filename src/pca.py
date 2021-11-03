@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 
 def main():
     
-    # Settings
+    # Display Settings
     plot_pca_result = False
-    show_rec_imgs = False
+    show_rec_imgs = True
+    show_num_imgs = 10
 
     # Set destination paths
     repo_path = '/home/ss/ss_ws/face-recognition/'
@@ -54,15 +55,18 @@ def main():
 
 
     # Apply PCA with 40, 80, and 200 Ds
-    Dimensions = [40, 80, 200]
+    Dimensions = [40, 80, 100]
     pca_list = []
     proj_imgs_list = []
+    rec_imgs_list = []
 
     for i in range(len(Dimensions)):
         pca_list.append(PCA(Dimensions[i]))
         proj_imgs_list.append(pca_list[i].fit_transform(img_tensor))
+        rec_imgs_list.append(pca_list[i].inverse_transform(proj_imgs_list[i]))
 
     print(proj_imgs_list[2].shape)
+    print(rec_imgs_list[2].shape)
     # Reconstruct the images
     # rec_imgs_2d = pca_2.inverse_transform(proj_imgs_2d)
     # rec_imgs_3d = pca_3.inverse_transform(proj_imgs_3d)
@@ -75,16 +79,17 @@ def main():
     # Visualize reconstructed images
     if show_rec_imgs:
         for i in range(img_tensor.shape[0]):
-            fig, axs = plt.subplots(1, 4)
-            axs[0].title.set_text('Original')
-            axs[0].imshow(img_tensor[i, :].reshape((32, 32)), cmap='gray')
-            axs[1].title.set_text('D = 2')
-            axs[1].imshow(rec_imgs_2d[i, :].reshape((32, 32)), cmap='gray')
-            axs[2].title.set_text('D = 3')
-            axs[2].imshow(rec_imgs_3d[i, :].reshape((32, 32)), cmap='gray')
-            axs[2].title.set_text('D = 4')
-            axs[2].imshow(rec_imgs_3d[i, :].reshape((32, 32)), cmap='gray')
-            plt.show()
+            if (i < show_num_imgs):
+                fig, axs = plt.subplots(1, 4)
+                axs[0].title.set_text('Original')
+                axs[0].imshow(img_tensor[i, :].reshape((32, 32)), cmap='gray')
+                axs[1].title.set_text('D = 40')
+                axs[1].imshow(rec_imgs_list[0][i, :].reshape((32, 32)), cmap='gray')
+                axs[2].title.set_text('D = 80')
+                axs[2].imshow(rec_imgs_list[1][i, :].reshape((32, 32)), cmap='gray')
+                axs[3].title.set_text('D = 200')
+                axs[3].imshow(rec_imgs_list[2][i, :].reshape((32, 32)), cmap='gray')
+                plt.show()
     
     print('Done')
 
