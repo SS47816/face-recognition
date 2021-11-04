@@ -49,7 +49,8 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
 
     return np.vstack(selected_PIE_imgs), np.vstack(my_imgs)
 
-def getPCAResults(X_train, PIE_train, MY_train, img_shape, show_plot=True):
+
+def getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=True):
     # Apply PCA on 3D (which also included 2D)
     pca_3 = PCA(3)
     pca_3.fit(X_train)
@@ -84,11 +85,49 @@ def getPCAResults(X_train, PIE_train, MY_train, img_shape, show_plot=True):
             ax = fig.add_subplot(1, 4, i + 2, xticks=[], yticks=[])
             ax.imshow(pca_3.components_[i].reshape(img_shape), cmap='gray')
         plt.show()
+    return
+
+
+def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5):
+    # Apply PCA on 40, 80, 200 dimensions
+    pca_list = []
+    proj_imgs_list = []
+    rec_imgs_list = []
+
+    for i in range(len(dimensions)):
+        pca_list.append(PCA(dimensions[i]))
+        # Fit PCA on the images
+        proj_imgs_list.append(pca_list[i].fit_transform(X_train))
+        # Reconstruct the images
+        rec_imgs_list.append(pca_list[i].inverse_transform(proj_imgs_list[i]))
+
+    print(proj_imgs_list[2].shape)
+    print(rec_imgs_list[2].shape)
+
+    # Visualize reconstructed images
+    if show_samples > 0:
+        print('Showing %d example results here' % show_samples)
+        for i in range(X_train.shape[0]):
+            if (i < show_samples):
+                # Plot the original image and the reconstructed faces
+                fig = plt.figure(figsize=(16, 6))
+                ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
+                ax.title.set_text('Original')
+                ax.imshow(X_train[i, :].reshape(img_shape), cmap='gray')
+                for j in range(3):
+                    ax = fig.add_subplot(1, 4, j + 2, xticks=[], yticks=[])
+                    ax.title.set_text('D = %d' %dimensions[j])
+                    ax.imshow(rec_imgs_list[j][i, :].reshape(img_shape), cmap='gray')
+                plt.show()
+            else:
+                break
+    return
+
 
 def main():
     # Display Settings
     show_pca_result = True      # If we want to plot the PCA results
-    show_num_imgs = 0           # Number of example results to display after done, `0` for no output
+    show_num_samples = 3        # Number of example results to display after done, `0` for no output
 
     # Set destination paths
     data_path = '/home/ss/ss_ws/face-recognition/data'
@@ -102,43 +141,14 @@ def main():
     print(X_train.shape)
 
     # Apply PCA on 3D (which also included 2D) and visualize results
-    getPCAResults(X_train, PIE_train, MY_train, img_shape, show_plot=show_pca_result)
+    getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=show_pca_result)
 
-    # Apply PCA on 40, 80, 200 Dimensions
-    Dimensions = [40, 80, 200]
-    pca_list = []
-    proj_imgs_list = []
-    rec_imgs_list = []
-
-    for i in range(len(Dimensions)):
-        pca_list.append(PCA(Dimensions[i]))
-        # Fit PCA on the images
-        proj_imgs_list.append(pca_list[i].fit_transform(X_train))
-        # Reconstruct the images
-        rec_imgs_list.append(pca_list[i].inverse_transform(proj_imgs_list[i]))
-
-    print(proj_imgs_list[2].shape)
-    print(rec_imgs_list[2].shape)
-
-    # Visualize reconstructed images
-    if show_num_imgs > 0:
-        print('Showing %d example results here' % show_num_imgs)
-        for i in range(X_train.shape[0]):
-            if (i < show_num_imgs):
-                # Plot the original image and the reconstructed faces
-                fig = plt.figure(figsize=(16, 6))
-                ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
-                ax.title.set_text('Original')
-                ax.imshow(X_train[i, :].reshape(img_shape), cmap='gray')
-                for j in range(3):
-                    ax = fig.add_subplot(1, 4, j + 2, xticks=[], yticks=[])
-                    ax.title.set_text('D = %d' %Dimensions[j])
-                    ax.imshow(rec_imgs_list[j][i, :].reshape(img_shape), cmap='gray')
-                plt.show()
-            else:
-                break
+    # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
+    dimensions = [40, 80, 200]
+    reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=show_num_samples)
 
     print('Finished PCA Processing')
+    return
 
 if __name__ == "__main__":
     main()
