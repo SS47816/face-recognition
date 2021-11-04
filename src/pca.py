@@ -1,4 +1,5 @@
 import os
+import copy
 import random
 import numpy as np
 import cv2
@@ -17,8 +18,8 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
 
     Returns
     ---
-    `selected_PIE_imgs`: `list[img]`, list of selected PIE img vectors
-    `my_imgs`: `list[img]`, list of selected my_photo img vectors
+    `selected_PIE_imgs`: `np.ndarray`, a tensor made of vertically stacked selected PIE img vectors
+    `my_imgs`: `np.ndarray`, a tensor made of vertically stacked selected my_photo img vectors
     """
     # List all subjects in set
     set_path = os.path.join(data_path, set)
@@ -46,7 +47,7 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
     print('Read %d PIE images from %s' % (len(selected_PIE_imgs), set))
     print('Read %d my_photo from %s' % (len(my_imgs), set))
 
-    return selected_PIE_imgs, my_imgs
+    return np.vstack(selected_PIE_imgs), np.vstack(my_imgs)
 
 
 def main():
@@ -58,11 +59,10 @@ def main():
     data_path = '/home/ss/ss_ws/face-recognition/data'
 
     # Read 500 images from the train set
-    PIE_train_imgs, my_train_imgs = readImageData(data_path, set='train', num_PIE_imgs=500)
+    PIE_train, my_train = readImageData(data_path, set='train', num_PIE_imgs=500)
 
-    # Stack image vectors together
-    PIE_train_imgs.extend(my_train_imgs)
-    X_train = np.vstack(PIE_train_imgs)
+    # Stack all image vectors together forming X_train set
+    X_train = np.vstack((PIE_train, my_train))
     img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
     print(X_train.shape)
 
@@ -71,6 +71,8 @@ def main():
     proj_imgs_2d = pca_2.fit_transform(X_train)
     pca_3 = PCA(3)
     proj_imgs_3d = pca_3.fit_transform(X_train)
+    # pca_3.fit(X_train)
+    # projected pca_3.transform()
 
     # Visualize data
     if plot_pca_result:
@@ -86,6 +88,7 @@ def main():
         # 3D subplot
         ax = fig.add_subplot(1, 2, 2, projection='3d')
         ax.scatter(proj_imgs_3d[:, 0], proj_imgs_3d[:, 1], proj_imgs_3d[:, 2], s = 15, cmap = c_map)
+        # ax.scatter(proj_imgs_3d[:, 0], proj_imgs_3d[:, 1], proj_imgs_3d[:, 2], s = 15, cmap = c_map)
         ax.set_xlabel('Principle Axis 1')
         ax.set_ylabel('Principle Axis 2')
         ax.set_zlabel('Principle Axis 3')
