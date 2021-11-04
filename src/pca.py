@@ -53,42 +53,40 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
 def main():
     # Display Settings
     plot_pca_result = True      # If we want to plot the PCA results
-    show_num_imgs = 5           # Number of example results to display after done, `0` for no output
+    show_num_imgs = 0           # Number of example results to display after done, `0` for no output
 
     # Set destination paths
     data_path = '/home/ss/ss_ws/face-recognition/data'
 
     # Read 500 images from the train set
-    PIE_train, my_train = readImageData(data_path, set='train', num_PIE_imgs=500)
+    PIE_train, MY_train = readImageData(data_path, set='train', num_PIE_imgs=500)
 
     # Stack all image vectors together forming X_train set
-    X_train = np.vstack((PIE_train, my_train))
+    X_train = np.vstack((PIE_train, MY_train))
     img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
     print(X_train.shape)
 
-    # Apply PCA on 2D and 3D
-    pca_2 = PCA(2)
-    proj_imgs_2d = pca_2.fit_transform(X_train)
+    # Apply PCA on 3D (which also included 2D)
     pca_3 = PCA(3)
-    proj_imgs_3d = pca_3.fit_transform(X_train)
-    # pca_3.fit(X_train)
-    # projected pca_3.transform()
+    pca_3.fit(X_train)
+    proj_PIE_imgs_3d = pca_3.transform(PIE_train)
+    proj_MY_imgs_3d = pca_3.transform(MY_train)
 
     # Visualize data
     if plot_pca_result:
         print('Visualizing Results... ')
         plt.style.use('seaborn-whitegrid')
         fig = plt.figure(figsize=plt.figaspect(0.5))
-        c_map = plt.cm.get_cmap('jet', 10)
         # 2D subplot
         ax = fig.add_subplot(1, 2, 1)
-        ax.scatter(proj_imgs_2d[:, 0], proj_imgs_2d[:, 1], s = 15, cmap = c_map)
+        ax.scatter(proj_PIE_imgs_3d[:, 0], proj_PIE_imgs_3d[:, 1], s = 15, c = 'c')
+        ax.scatter(proj_MY_imgs_3d[:, 0], proj_MY_imgs_3d[:, 1], s = 15, c = 'r')
         ax.set_xlabel('Principle Axis 1')
         ax.set_ylabel('Principle Axis 2')
         # 3D subplot
         ax = fig.add_subplot(1, 2, 2, projection='3d')
-        ax.scatter(proj_imgs_3d[:, 0], proj_imgs_3d[:, 1], proj_imgs_3d[:, 2], s = 15, cmap = c_map)
-        # ax.scatter(proj_imgs_3d[:, 0], proj_imgs_3d[:, 1], proj_imgs_3d[:, 2], s = 15, cmap = c_map)
+        ax.scatter(proj_PIE_imgs_3d[:, 0], proj_PIE_imgs_3d[:, 1], proj_PIE_imgs_3d[:, 2], s = 10, c = 'c')
+        ax.scatter(proj_MY_imgs_3d[:, 0], proj_MY_imgs_3d[:, 1], proj_MY_imgs_3d[:, 2], s = 15, c = 'r')
         ax.set_xlabel('Principle Axis 1')
         ax.set_ylabel('Principle Axis 2')
         ax.set_zlabel('Principle Axis 3')
