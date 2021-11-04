@@ -1,5 +1,4 @@
 import os
-import copy
 import random
 import numpy as np
 import cv2
@@ -129,9 +128,6 @@ def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5) -> None:
         proj_imgs_list.append(pca_list[i].fit_transform(X_train))
         # Reconstruct the images
         rec_imgs_list.append(pca_list[i].inverse_transform(proj_imgs_list[i]))
-
-    print(proj_imgs_list[2].shape)
-    print(rec_imgs_list[2].shape)
 
     # Visualize reconstructed images
     if show_samples > 0:
