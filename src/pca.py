@@ -50,7 +50,22 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
     return np.vstack(selected_PIE_imgs), np.vstack(my_imgs)
 
 
-def getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=True):
+def getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=True) -> None:
+    """
+    Apply the train data to fit the PCA on 3D and plot the results in 2D and 3D
+
+    Parameters
+    ---
+    `X_train`: `np.ndarray`, the train data to be used to fit the PCA algorithm
+    `PIE_train`: `np.ndarray`, the first set of train data to be transformed by PCA
+    `MY_train`: `np.ndarray`, the second set of train data to be transformed by PCA
+    `img_shape`: `np.array`, the shape of the original images for display
+    `show_plot`: `bool`, if the results should be plotted, default as `True`
+
+    Returns
+    ---
+    `None`
+    """
     # Apply PCA on 3D (which also included 2D)
     pca_3 = PCA(3)
     pca_3.fit(X_train)
@@ -88,7 +103,21 @@ def getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=True):
     return
 
 
-def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5):
+def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5) -> None:
+    """
+    Apply the train data to fit a series of PCAs with different dimensions and show the reconstructed images
+
+    Parameters
+    ---
+    `X_train`: `np.ndarray`, the train data to be used to fit the PCA algorithm
+    `dimensions`: `list[int]`, list of PCA dimensions to be tested
+    `img_shape`: `np.array`, the shape of the original images for display
+    `show_samples`: `int`, the number of example results to display after done, `0` for no output, default as `5`
+    
+    Returns
+    ---
+    `None`
+    """
     # Apply PCA on 40, 80, 200 dimensions
     pca_list = []
     proj_imgs_list = []
