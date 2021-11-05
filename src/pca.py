@@ -168,6 +168,29 @@ def applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=5) -> tuple:
 
     return proj_X_train_list, proj_X_test_list
 
+def showErrorRates(x, PIE_error_rates, MY_error_rates):
+    """
+    Plot the error rate graph based on the given data
+
+    Parameters
+    ---
+    `x`: `list[]`, list of values for the x axis
+    `PIE_error_rates`: `list[np.ndarray]`, list of error rates on PIE set
+    `MY_error_rates`: `list[np.ndarray]`, list of error rates on MY set
+    
+    Returns
+    ---
+    `None`
+    """
+    # Visualize KNN classification error rates
+    fig, ax = plt.subplots()
+    line1, = ax.plot(x, PIE_error_rates, marker='o', color='c', dashes=[6, 2], label='PIE test set')
+    line2, = ax.plot(x, MY_error_rates, marker='*', color='r', dashes=[4, 2], label='MY test set')
+    ax.set_xlabel('Image Dimensions')
+    ax.set_ylabel('KNN Classification Error Rate')
+    ax.legend()
+    plt.show()
+    return
 
 def main():
     # Display Settings
@@ -196,17 +219,20 @@ def main():
     dimensions = [40, 80, 200]
     proj_X_train_list, proj_X_test_list = applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=show_num_samples)
     
+    # Apply KNN Classifications on the PCA preprocessed images
     PIE_error_rates = []
     MY_error_rates = []
-    for i in range(len(proj_X_train_list)):
+    # For each dimension to be tested
+    for i in range(len(dimensions)):
         print('For images with %d dimensions: ' % dimensions[i])
+        # Split X_test into PIE and MY datasets
         proj_PIE_X_test = proj_X_test_list[i][:-3,:]
         proj_MY_X_test = proj_X_test_list[i][-3:,:]
-        print(proj_PIE_X_test.shape)
-        print(proj_MY_X_test.shape)
+        # Apply KNN classifications
         KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(proj_X_train_list[i], y_train.ravel())
         PIE_y_test_pred = KNN.predict(proj_PIE_X_test).reshape(-1, 1)
         MY_y_test_pred = KNN.predict(proj_MY_X_test).reshape(-1, 1)
+        # Collect results
         PIE_error_rates.append((PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0])
         MY_error_rates.append((MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0])
 
@@ -215,22 +241,13 @@ def main():
     KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
     PIE_y_test_pred = KNN.predict(PIE_X_test).reshape(-1, 1)
     MY_y_test_pred = KNN.predict(MY_X_test).reshape(-1, 1)
-    
-    # Print results
+    # Collect results
     PIE_error_rates.append((PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0])
     MY_error_rates.append((MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0])
-    dimensions.append(PIE_X_test.shape[1])
-    print(PIE_error_rates)
-    print(MY_error_rates)
-
+    
     # Visualize KNN classification error rates
-    fig, ax = plt.subplots()
-    line1, = ax.plot(dimensions, PIE_error_rates, marker='o', color='c', dashes=[6, 2], label='PIE test set')
-    line2, = ax.plot(dimensions, MY_error_rates, marker='*', color='r', dashes=[4, 2], label='MY test set')
-    ax.set_xlabel('Image Dimensions')
-    ax.set_ylabel('KNN Classification Error Rate')
-    ax.legend()
-    plt.show()
+    dimensions.append(PIE_X_test.shape[1])
+    showErrorRates(dimensions, PIE_error_rates, MY_error_rates)
 
     print('Finished PCA Processing')
     return
