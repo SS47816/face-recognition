@@ -168,6 +168,34 @@ def applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=5) -> tuple:
 
     return proj_X_train_list, proj_X_test_list
 
+def KNNClassification(X_train, y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test):
+    """
+    Apply KNN classification on the train data and predict on two separate sets
+
+    Parameters
+    ---
+    `X_train`: `np.ndarray`, the train data X to be used to fit the KNN classifier
+    `y_train`: `np.ndarray`, the train data y to be used to fit the KNN classifier
+    `PIE_X_test`: `np.ndarray`, the first test set to be used by the KNN classifier to predict
+    `PIE_y_test`: `np.ndarray`, the first test set's y_label to be used to compute error rate
+    `MY_X_test`: `np.ndarray`, the second test set to be used by the KNN classifier to predict
+    `MY_y_test`: `np.ndarray`, the second test set's y_label to be used to compute error rate
+    
+    Returns
+    ---
+    `PIE_error_rate`: `float`, list of PCA projected images on the train set
+    `MY_error_rate`: `float`, list of PCA projected images on the test set
+    """
+    # Apply KNN classifications
+    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
+    PIE_y_test_pred = KNN.predict(PIE_X_test).reshape(-1, 1)
+    MY_y_test_pred = KNN.predict(MY_X_test).reshape(-1, 1)
+    # Collect results
+    PIE_error_rate = (PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0]
+    MY_error_rate = (MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0]
+
+    return PIE_error_rate, MY_error_rate
+
 def showErrorRates(x, PIE_error_rates, MY_error_rates):
     """
     Plot the error rate graph based on the given data
@@ -219,31 +247,30 @@ def main():
     dimensions = [40, 80, 200]
     proj_X_train_list, proj_X_test_list = applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=show_num_samples)
     
+    # KNNClassification()
     # Apply KNN Classifications on the PCA preprocessed images
     PIE_error_rates = []
     MY_error_rates = []
     # For each dimension to be tested
-    for i in range(len(dimensions)):
+    for i in range(len(proj_X_train_list)):
         print('For images with %d dimensions: ' % dimensions[i])
         # Split X_test into PIE and MY datasets
         proj_PIE_X_test = proj_X_test_list[i][:-3,:]
         proj_MY_X_test = proj_X_test_list[i][-3:,:]
+        print(proj_PIE_X_test.shape)
+        print(PIE_y_test.shape)
         # Apply KNN classifications
-        KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(proj_X_train_list[i], y_train.ravel())
-        PIE_y_test_pred = KNN.predict(proj_PIE_X_test).reshape(-1, 1)
-        MY_y_test_pred = KNN.predict(proj_MY_X_test).reshape(-1, 1)
+        PIE_error_rate, MY_error_rate = KNNClassification(proj_X_train_list[i], y_train, proj_PIE_X_test, PIE_y_test, proj_MY_X_test, MY_y_test)
         # Collect results
-        PIE_error_rates.append((PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0])
-        MY_error_rates.append((MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0])
+        PIE_error_rates.append(PIE_error_rate)
+        MY_error_rates.append(MY_error_rate)
 
     # Apply KNN Classification on the original images
     print('For original images with %d dimensions: ' % X_train.shape[1])
-    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
-    PIE_y_test_pred = KNN.predict(PIE_X_test).reshape(-1, 1)
-    MY_y_test_pred = KNN.predict(MY_X_test).reshape(-1, 1)
+    PIE_error_rate, MY_error_rate = KNNClassification(X_train, y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test)
     # Collect results
-    PIE_error_rates.append((PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0])
-    MY_error_rates.append((MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0])
+    PIE_error_rates.append(PIE_error_rate)
+    MY_error_rates.append(MY_error_rate)
     
     # Visualize KNN classification error rates
     dimensions.append(PIE_X_test.shape[1])
