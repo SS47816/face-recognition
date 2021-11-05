@@ -51,15 +51,19 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
                 idxs.append(idx)
                 idx += 1
     
-    # Randomly Select a given number of samples from the PIE set
-    selected_idxs = random.sample(idxs, num_PIE_imgs)
-    selected_PIE_imgs = [PIE_imgs[i] for i in selected_idxs]
-    selected_PIE_lables = [PIE_lables[i] for i in selected_idxs]
+    if num_PIE_imgs > 0:
+        # Randomly Select a given number of samples from the PIE set
+        selected_idxs = random.sample(idxs, num_PIE_imgs)
+        selected_PIE_imgs = [PIE_imgs[i] for i in selected_idxs]
+        selected_PIE_lables = [PIE_lables[i] for i in selected_idxs]
 
-    print('Read %d PIE images from %s' % (len(selected_PIE_imgs), set))
-    print('Read %d my_photo from %s' % (len(MY_imgs), set))
+        print('Read %d PIE images from %s' % (len(selected_PIE_imgs), set))
+        print('Read %d my_photo from %s' % (len(MY_imgs), set))
 
-    return np.vstack(selected_PIE_imgs), np.vstack(MY_imgs), np.vstack(selected_PIE_lables), np.vstack(MY_lables)
+        return np.vstack(selected_PIE_imgs), np.vstack(MY_imgs), np.vstack(selected_PIE_lables), np.vstack(MY_lables)
+    else:
+        # Return all PIE images and MY images without sampling
+        return np.vstack(PIE_imgs), np.vstack(MY_imgs), np.vstack(PIE_lables), np.vstack(MY_lables)
 
 
 def getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=True) -> None:
@@ -164,22 +168,22 @@ def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5) -> None:
 
 def main():
     # Display Settings
-    show_pca_result = True      # If we want to plot the PCA results
-    show_num_samples = 3        # Number of example results to display after done, `0` for no output
+    show_pca_result = False      # If we want to plot the PCA results
+    show_num_samples = 0        # Number of example results to display after done, `0` for no output
 
     # Set destination paths
     data_path = '/home/ss/ss_ws/face-recognition/data'
 
     # Read 500 images from the train set
-    PIE_X_train, MY_X_train, PIE_y_train, MY_y_train= readImageData(data_path, set='train', num_PIE_imgs=500)
+    PIE_X_train, MY_X_train, PIE_y_train, MY_y_train = readImageData(data_path, set='train', num_PIE_imgs=500)
+    PIE_X_train, MY_X_train, PIE_y_train, MY_y_train = readImageData(data_path, set='train', num_PIE_imgs=500)
 
     # Stack all image vectors together forming X_train set
     X_train = np.vstack((PIE_X_train, MY_X_train))
     y_train = np.vstack((PIE_y_train, MY_y_train))
     print(X_train.shape)
     print(y_train.shape)
-    print(PIE_y_train.shape)
-    print(MY_y_train.shape)
+
     img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
 
     # Apply PCA on 3D (which also included 2D) and visualize results
@@ -189,8 +193,15 @@ def main():
     dimensions = [40, 80, 200]
     reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=show_num_samples)
 
-    KNN = KNeighborsClassifier(n_neighbors=3)
-    KNN.fit()
+    # Apply KNN Classification
+    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean')
+    KNN.fit(X_train, y_train)
+    y_train_pred = KNN.predict(X_train).reshape(-1, 1)
+    
+    # Print results
+    num_error = (y_train_pred != y_train).sum()
+    error_rate = num_error/y_train_pred.shape[0]
+    print(error_rate)
 
     print('Finished PCA Processing')
     return
