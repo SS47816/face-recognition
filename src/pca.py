@@ -149,20 +149,18 @@ def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5) -> None:
     # Visualize reconstructed images
     if show_samples > 0:
         print('Showing %d example results here' % show_samples)
-        for i in range(X_train.shape[0]):
-            if (i < show_samples):
-                # Plot the original image and the reconstructed faces
-                fig = plt.figure(figsize=(16, 6))
-                ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
-                ax.title.set_text('Original')
-                ax.imshow(X_train[i, :].reshape(img_shape), cmap='gray')
-                for j in range(3):
-                    ax = fig.add_subplot(1, 4, j + 2, xticks=[], yticks=[])
-                    ax.title.set_text('D = %d' %dimensions[j])
-                    ax.imshow(rec_imgs_list[j][i, :].reshape(img_shape), cmap='gray')
-                plt.show()
-            else:
-                break
+        for i in range(show_samples):
+            # Plot the original image and the reconstructed faces
+            fig = plt.figure(figsize=(16, 6))
+            ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
+            ax.title.set_text('Original')
+            ax.imshow(X_train[i, :].reshape(img_shape), cmap='gray')
+            for j in range(3):
+                ax = fig.add_subplot(1, 4, j + 2, xticks=[], yticks=[])
+                ax.title.set_text('D = %d' %dimensions[j])
+                ax.imshow(rec_imgs_list[j][i, :].reshape(img_shape), cmap='gray')
+            plt.show()
+
     return
 
 
@@ -194,8 +192,7 @@ def main():
     reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=show_num_samples)
 
     # Apply KNN Classification
-    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean')
-    KNN.fit(X_train, y_train)
+    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
     y_train_pred = KNN.predict(X_train).reshape(-1, 1)
     
     # Print results
