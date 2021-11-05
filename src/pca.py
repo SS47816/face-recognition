@@ -219,9 +219,18 @@ def main():
     # Print results
     PIE_error_rates.append((PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0])
     MY_error_rates.append((MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0])
-
+    dimensions.append(PIE_X_test.shape[1])
     print(PIE_error_rates)
     print(MY_error_rates)
+
+    # Visualize KNN classification error rates
+    fig, ax = plt.subplots()
+    line1, = ax.plot(dimensions, PIE_error_rates, marker='o', color='c', dashes=[6, 2], label='PIE test set')
+    line2, = ax.plot(dimensions, MY_error_rates, marker='*', color='r', dashes=[4, 2], label='MY test set')
+    ax.set_xlabel('Image Dimensions')
+    ax.set_ylabel('KNN Classification Error Rate')
+    ax.legend()
+    plt.show()
 
     print('Finished PCA Processing')
     return
