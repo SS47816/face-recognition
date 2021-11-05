@@ -3,6 +3,7 @@ import random
 import numpy as np
 import cv2
 from sklearn.decomposition import PCA
+from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 
 def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
@@ -18,7 +19,9 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
     Returns
     ---
     `selected_PIE_imgs`: `np.ndarray`, a tensor made of vertically stacked selected PIE img vectors
-    `my_imgs`: `np.ndarray`, a tensor made of vertically stacked selected my_photo img vectors
+    `MY_imgs`: `np.ndarray`, a tensor made of vertically stacked selected my_photo img vectors
+    `selected_PIE_lables`: `np.ndarray`, labels of the selected PIE img vectors
+    `MY_lables`: `np.ndarray`,  labels of the selected my_photo img vectors
     """
     # List all subjects in set
     set_path = os.path.join(data_path, set)
@@ -26,7 +29,11 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
 
     # Within each subject of the PIE dataset, read all images
     PIE_imgs = []
-    my_imgs = []
+    MY_imgs = []
+    PIE_lables = []
+    MY_lables = []
+    idxs = []
+    idx = 0
     for subject_path in subject_paths:
         folder_path = os.path.join(set_path, subject_path)
         if subject_path == '.DS_Store':
@@ -34,30 +41,36 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
         elif subject_path == 'my_photo':
             # Load my_photo images 
             for img_file in os.listdir(folder_path):
-                my_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
+                MY_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
+                MY_lables.append(int(0))
         else:
             # Load PIE images 
             for img_file in os.listdir(folder_path):
                 PIE_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
+                PIE_lables.append(int(subject_path))
+                idxs.append(idx)
+                idx += 1
     
     # Randomly Select a given number of samples from the PIE set
-    selected_PIE_imgs = random.sample(PIE_imgs, num_PIE_imgs)
+    selected_idxs = random.sample(idxs, num_PIE_imgs)
+    selected_PIE_imgs = [PIE_imgs[i] for i in selected_idxs]
+    selected_PIE_lables = [PIE_lables[i] for i in selected_idxs]
 
     print('Read %d PIE images from %s' % (len(selected_PIE_imgs), set))
-    print('Read %d my_photo from %s' % (len(my_imgs), set))
+    print('Read %d my_photo from %s' % (len(MY_imgs), set))
 
-    return np.vstack(selected_PIE_imgs), np.vstack(my_imgs)
+    return np.vstack(selected_PIE_imgs), np.vstack(MY_imgs), np.vstack(selected_PIE_lables), np.vstack(MY_lables)
 
 
-def getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=True) -> None:
+def getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=True) -> None:
     """
     Apply the train data to fit the PCA on 3D and plot the results in 2D and 3D
 
     Parameters
     ---
     `X_train`: `np.ndarray`, the train data to be used to fit the PCA algorithm
-    `PIE_train`: `np.ndarray`, the first set of train data to be transformed by PCA
-    `MY_train`: `np.ndarray`, the second set of train data to be transformed by PCA
+    `PIE_X_train`: `np.ndarray`, the first set of train data to be transformed by PCA
+    `MY_X_train`: `np.ndarray`, the second set of train data to be transformed by PCA
     `img_shape`: `np.array`, the shape of the original images for display
     `show_plot`: `bool`, if the results should be plotted, default as `True`
 
@@ -68,8 +81,8 @@ def getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=True) -> N
     # Apply PCA on 3D (which also included 2D)
     pca_3 = PCA(3)
     pca_3.fit(X_train)
-    proj_PIE_imgs = pca_3.transform(PIE_train)
-    proj_MY_imgs = pca_3.transform(MY_train)
+    proj_PIE_imgs = pca_3.transform(PIE_X_train)
+    proj_MY_imgs = pca_3.transform(MY_X_train)
     
     # Visualize results
     if show_plot:
@@ -158,19 +171,26 @@ def main():
     data_path = '/home/ss/ss_ws/face-recognition/data'
 
     # Read 500 images from the train set
-    PIE_train, MY_train = readImageData(data_path, set='train', num_PIE_imgs=500)
+    PIE_X_train, MY_X_train, PIE_y_train, MY_y_train= readImageData(data_path, set='train', num_PIE_imgs=500)
 
     # Stack all image vectors together forming X_train set
-    X_train = np.vstack((PIE_train, MY_train))
-    img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
+    X_train = np.vstack((PIE_X_train, MY_X_train))
+    y_train = np.vstack((PIE_y_train, MY_y_train))
     print(X_train.shape)
+    print(y_train.shape)
+    print(PIE_y_train.shape)
+    print(MY_y_train.shape)
+    img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
 
     # Apply PCA on 3D (which also included 2D) and visualize results
-    getPCA3Results(X_train, PIE_train, MY_train, img_shape, show_plot=show_pca_result)
+    getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=show_pca_result)
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     dimensions = [40, 80, 200]
     reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=show_num_samples)
+
+    KNN = KNeighborsClassifier(n_neighbors=3)
+    KNN.fit()
 
     print('Finished PCA Processing')
     return
