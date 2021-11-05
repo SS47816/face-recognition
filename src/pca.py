@@ -172,15 +172,19 @@ def main():
     # Set destination paths
     data_path = '/home/ss/ss_ws/face-recognition/data'
 
-    # Read 500 images from the train set
+    # Read 500 images from the train set and all from the test set
     PIE_X_train, MY_X_train, PIE_y_train, MY_y_train = readImageData(data_path, set='train', num_PIE_imgs=500)
-    PIE_X_train, MY_X_train, PIE_y_train, MY_y_train = readImageData(data_path, set='train', num_PIE_imgs=500)
+    PIE_X_test, MY_X_test, PIE_y_test, MY_y_test = readImageData(data_path, set='test')
 
-    # Stack all image vectors together forming X_train set
+    # Stack all image vectors together forming train and test sets
     X_train = np.vstack((PIE_X_train, MY_X_train))
     y_train = np.vstack((PIE_y_train, MY_y_train))
+    X_test = np.vstack((PIE_X_test, MY_X_test))
+    y_test = np.vstack((PIE_y_test, MY_y_test))
     print(X_train.shape)
     print(y_train.shape)
+    print(X_test.shape)
+    print(y_test.shape)
 
     img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
 
@@ -191,14 +195,16 @@ def main():
     dimensions = [40, 80, 200]
     reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=show_num_samples)
 
-    # Apply KNN Classification
-    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
+    # Apply KNN Classification on the original images
+    KNN = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
     y_train_pred = KNN.predict(X_train).reshape(-1, 1)
+    y_test_pred = KNN.predict(X_test).reshape(-1, 1)
     
     # Print results
-    num_error = (y_train_pred != y_train).sum()
-    error_rate = num_error/y_train_pred.shape[0]
-    print(error_rate)
+    error_rate_train = (y_train_pred != y_train).sum() / y_train_pred.shape[0]
+    print(error_rate_train)
+    error_rate_test = (y_test_pred != y_test).sum() / y_test_pred.shape[0]
+    print(error_rate_test)
 
     print('Finished PCA Processing')
     return
