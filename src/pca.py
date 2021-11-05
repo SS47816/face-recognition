@@ -119,7 +119,7 @@ def getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=True) 
     return
 
 
-def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5) -> None:
+def applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=5) -> tuple:
     """
     Apply the train data to fit a series of PCAs with different dimensions and show the reconstructed images
 
@@ -132,19 +132,22 @@ def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5) -> None:
     
     Returns
     ---
-    `None`
+    `proj_X_train_list`: `list[np.ndarray]`, list of PCA projected images
+    `rec_imgs_list`: `list[np.ndarray]`, list of PCA reconstructed images
     """
     # Apply PCA on 40, 80, 200 dimensions
     pca_list = []
-    proj_imgs_list = []
+    proj_X_train_list = []
+    proj_X_test_list = []
     rec_imgs_list = []
 
     for i in range(len(dimensions)):
         pca_list.append(PCA(dimensions[i]))
         # Fit PCA on the images
-        proj_imgs_list.append(pca_list[i].fit_transform(X_train))
+        proj_X_train_list.append(pca_list[i].fit_transform(X_train))
+        proj_X_test_list.append(pca_list[i].transform(X_test))
         # Reconstruct the images
-        rec_imgs_list.append(pca_list[i].inverse_transform(proj_imgs_list[i]))
+        rec_imgs_list.append(pca_list[i].inverse_transform(proj_X_train_list[i]))
 
     # Visualize reconstructed images
     if show_samples > 0:
@@ -161,7 +164,7 @@ def reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=5) -> None:
                 ax.imshow(rec_imgs_list[j][i, :].reshape(img_shape), cmap='gray')
             plt.show()
 
-    return
+    return proj_X_train_list, proj_X_test_list
 
 
 def main():
@@ -193,10 +196,23 @@ def main():
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     dimensions = [40, 80, 200]
-    reconstructImgsPCAs(X_train, dimensions, img_shape, show_samples=show_num_samples)
+    proj_X_train_list, proj_X_test_list = applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=show_num_samples)
+    print(proj_X_train_list[0].shape)
+    print(proj_X_test_list[0].shape)
+
+    for i in range(len(proj_X_train_list)):
+        print('For images with %d dimensions: ' % dimensions[i])
+        KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(proj_X_train_list[i], y_train.ravel())
+        y_train_pred = KNN.predict(proj_X_train_list[i]).reshape(-1, 1)
+        y_test_pred = KNN.predict(proj_X_test_list[i]).reshape(-1, 1)
+        error_rate_train = (y_train_pred != y_train).sum() / y_train_pred.shape[0]
+        print(error_rate_train)
+        error_rate_test = (y_test_pred != y_test).sum() / y_test_pred.shape[0]
+        print(error_rate_test)
 
     # Apply KNN Classification on the original images
-    KNN = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
+    print('For original images with %d dimensions: ' % X_train.shape[1])
+    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
     y_train_pred = KNN.predict(X_train).reshape(-1, 1)
     y_test_pred = KNN.predict(X_test).reshape(-1, 1)
     
@@ -205,6 +221,7 @@ def main():
     print(error_rate_train)
     error_rate_test = (y_test_pred != y_test).sum() / y_test_pred.shape[0]
     print(error_rate_test)
+    print(np.hstack((y_test_pred, y_test)))
 
     print('Finished PCA Processing')
     return
