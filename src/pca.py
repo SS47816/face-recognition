@@ -57,12 +57,14 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
         selected_PIE_imgs = [PIE_imgs[i] for i in selected_idxs]
         selected_PIE_lables = [PIE_lables[i] for i in selected_idxs]
 
-        print('Read %d PIE images from %s' % (len(selected_PIE_imgs), set))
+        print('Read %d PIE images from %s and randomly sampled %d' % (len(PIE_imgs), set, len(selected_PIE_imgs)))
         print('Read %d my_photo from %s' % (len(MY_imgs), set))
 
         return np.vstack(selected_PIE_imgs), np.vstack(MY_imgs), np.vstack(selected_PIE_lables), np.vstack(MY_lables)
     else:
         # Return all PIE images and MY images without sampling
+        print('Read %d PIE images from %s' % (len(PIE_imgs), set))
+        print('Read %d my_photo from %s' % (len(MY_imgs), set))
         return np.vstack(PIE_imgs), np.vstack(MY_imgs), np.vstack(PIE_lables), np.vstack(MY_lables)
 
 
@@ -132,8 +134,8 @@ def applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=5) -> tuple:
     
     Returns
     ---
-    `proj_X_train_list`: `list[np.ndarray]`, list of PCA projected images
-    `rec_imgs_list`: `list[np.ndarray]`, list of PCA reconstructed images
+    `proj_X_train_list`: `list[np.ndarray]`, list of PCA projected images on the train set
+    `proj_X_test_list`: `list[np.ndarray]`, list of PCA projected images on the test set
     """
     # Apply PCA on 40, 80, 200 dimensions
     pca_list = []
@@ -184,10 +186,6 @@ def main():
     y_train = np.vstack((PIE_y_train, MY_y_train))
     X_test = np.vstack((PIE_X_test, MY_X_test))
     y_test = np.vstack((PIE_y_test, MY_y_test))
-    print(X_train.shape)
-    print(y_train.shape)
-    print(X_test.shape)
-    print(y_test.shape)
 
     img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
 
@@ -197,31 +195,33 @@ def main():
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     dimensions = [40, 80, 200]
     proj_X_train_list, proj_X_test_list = applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=show_num_samples)
-    print(proj_X_train_list[0].shape)
-    print(proj_X_test_list[0].shape)
-
+    
+    PIE_error_rates = []
+    MY_error_rates = []
     for i in range(len(proj_X_train_list)):
         print('For images with %d dimensions: ' % dimensions[i])
+        proj_PIE_X_test = proj_X_test_list[i][:-3,:]
+        proj_MY_X_test = proj_X_test_list[i][-3:,:]
+        print(proj_PIE_X_test.shape)
+        print(proj_MY_X_test.shape)
         KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(proj_X_train_list[i], y_train.ravel())
-        y_train_pred = KNN.predict(proj_X_train_list[i]).reshape(-1, 1)
-        y_test_pred = KNN.predict(proj_X_test_list[i]).reshape(-1, 1)
-        error_rate_train = (y_train_pred != y_train).sum() / y_train_pred.shape[0]
-        print(error_rate_train)
-        error_rate_test = (y_test_pred != y_test).sum() / y_test_pred.shape[0]
-        print(error_rate_test)
+        PIE_y_test_pred = KNN.predict(proj_PIE_X_test).reshape(-1, 1)
+        MY_y_test_pred = KNN.predict(proj_MY_X_test).reshape(-1, 1)
+        PIE_error_rates.append((PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0])
+        MY_error_rates.append((MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0])
 
     # Apply KNN Classification on the original images
     print('For original images with %d dimensions: ' % X_train.shape[1])
     KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
-    y_train_pred = KNN.predict(X_train).reshape(-1, 1)
-    y_test_pred = KNN.predict(X_test).reshape(-1, 1)
+    PIE_y_test_pred = KNN.predict(PIE_X_test).reshape(-1, 1)
+    MY_y_test_pred = KNN.predict(MY_X_test).reshape(-1, 1)
     
     # Print results
-    error_rate_train = (y_train_pred != y_train).sum() / y_train_pred.shape[0]
-    print(error_rate_train)
-    error_rate_test = (y_test_pred != y_test).sum() / y_test_pred.shape[0]
-    print(error_rate_test)
-    print(np.hstack((y_test_pred, y_test)))
+    PIE_error_rates.append((PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0])
+    MY_error_rates.append((MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0])
+
+    print(PIE_error_rates)
+    print(MY_error_rates)
 
     print('Finished PCA Processing')
     return
