@@ -12,34 +12,48 @@ class FaceDataset:
     """
     Customized data structure for storing all face images in a organized way
 
-    Arrtributes:
-    ----------
-
+    Arrtributes
+    -----------
+    `X_PIE` (`np.ndarray`): the PIE training set images
+    `y_PIE` (`np.ndarray`): the PIE training set labels
+    `X_MY` (`np.ndarray`): my_photo training set images
+    `y_MY` (`np.ndarray`): my_photo training set labels
+    `X` (`np.ndarray`): the whole training set images
+    `y` (`np.ndarray`): the whole training set labels
 
     """
-    def __init__(self, PIE_X_train, PIE_y_train, MY_X_train, MY_y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test):
-        self.PIE_X_train = PIE_X_train
-        self.PIE_y_train = PIE_y_train
-        self.MY_X_train = MY_X_train
-        self.MY_y_train = MY_y_train
-        self.PIE_X_test = PIE_X_test
-        self.PIE_y_test = PIE_y_test
-        self.MY_X_test = MY_X_test
-        self.MY_y_test = MY_y_test
+    def __init__(self, X_PIE: np.ndarray, y_PIE: np.ndarray, X_MY: np.ndarray, y_MY: np.ndarray, name: str=''):
+        """
+        Initialize and organize all the subjects in the dataset
+        """
+        self.name = name
+        self.X_PIE = X_PIE
+        self.y_PIE = y_PIE
+        self.X_MY = X_MY
+        self.y_MY = y_MY
         # Stack all image vectors together forming train and test sets
-        self.X_train = np.vstack((self.PIE_X_train, self.MY_X_train))
-        self.y_train = np.vstack((self.PIE_y_train, self.MY_y_train))
-        self.X_test = np.vstack((self.PIE_X_test, self.MY_X_test))
-        self.y_test = np.vstack((self.PIE_y_test, self.MY_y_test))
+        self.X = np.vstack((self.X_PIE, self.X_MY))
+        self.y = np.vstack((self.y_PIE, self.y_MY))
 
-def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
+    @classmethod
+    def split(cls, X: np.ndarray, y: np.ndarray, split_idx: int, name :str=''):
+        """
+        Initialize and organize all the subjects in the dataset
+        """
+        X_PIE = X[:split_idx,:]
+        y_PIE = y[:split_idx,:]
+        X_MY = X[split_idx:,:]
+        y_MY = y[split_idx:,:]
+        return cls(X_PIE, y_PIE, X_MY, y_MY, name)
+
+def readImageData(data_path: str, set: str='train', num_PIE_imgs: int=-1) -> FaceDataset:
     """
     Read the PIE dataset and my_photo dataset
 
     Parameters
     ----------
-    `data_path` (`string`): path to the data folder
-    `set` (`string`): can be either `train` or `test`
+    `data_path` (`str`): path to the data folder
+    `set` (`str`): can be either `train` or `test`
     `num_PIE_imgs` (`int`): number of PIE images to sample
 
     Returns
@@ -86,14 +100,14 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
         print('Read %d PIE images from %s and randomly sampled %d' % (len(PIE_imgs), set, len(selected_PIE_imgs)))
         print('Read %d my_photo from %s' % (len(MY_imgs), set))
 
-        return np.vstack(selected_PIE_imgs), np.vstack(MY_imgs), np.vstack(selected_PIE_lables), np.vstack(MY_lables)
+        return FaceDataset(np.vstack(selected_PIE_imgs), np.vstack(selected_PIE_lables), np.vstack(MY_imgs), np.vstack(MY_lables), name=set)
     else:
         # Return all PIE images and MY images without sampling
         print('Read %d PIE images from %s' % (len(PIE_imgs), set))
         print('Read %d my_photo from %s' % (len(MY_imgs), set))
-        return np.vstack(PIE_imgs), np.vstack(MY_imgs), np.vstack(PIE_lables), np.vstack(MY_lables)
+        return FaceDataset(np.vstack(PIE_imgs), np.vstack(PIE_lables),np.vstack(MY_imgs), np.vstack(MY_lables), name=set)
 
-def getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=True) -> None:
+def getPCA3Results(train: FaceDataset, show_plot: bool=True) -> None:
     """
     Apply the train data to fit the PCA on 3D and plot the results in 2D and 3D
 
@@ -111,14 +125,14 @@ def getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=True) -> None:
     """
     # Apply PCA on 3D (which also included 2D)
     pca_3 = PCA(3)
-    pca_3.fit(X_train)
-    proj_PIE_imgs = pca_3.transform(PIE_X_train)
-    proj_MY_imgs = pca_3.transform(MY_X_train)
+    pca_3.fit(train.X)
+    proj_PIE_imgs = pca_3.transform(train.X_PIE)
+    proj_MY_imgs = pca_3.transform(train.X_MY)
     
     # Visualize results
     if show_plot:
         print('Visualizing Results... ')
-        img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
+        img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
         plt.style.use('seaborn-whitegrid')
         fig = plt.figure(figsize=plt.figaspect(0.5))
         # 2D Plot
@@ -146,7 +160,7 @@ def getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=True) -> None:
         plt.show()
     return
 
-def applyPCAs(X_train, X_test, dimensions, show_samples=5) -> tuple:
+def applyPCAs(dimensions, X_train, X_test, show_samples=5) -> tuple:
     """
     Apply the train data to fit a series of PCAs with different dimensions and show the reconstructed images
 
@@ -194,33 +208,53 @@ def applyPCAs(X_train, X_test, dimensions, show_samples=5) -> tuple:
 
     return proj_X_train_list, proj_X_test_list
 
-def KNNClassification(X_train, y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test):
+def KNNClassification(train_set: FaceDataset, test_set: FaceDataset):
     """
     Apply KNN classification on the train data and predict on two separate sets
 
     Parameters
     ----------
-    `X_train` (`np.ndarray`): the train data X to be used to fit the KNN classifier
-    `y_train` (`np.ndarray`): the train data y to be used to fit the KNN classifier
-    `PIE_X_test` (`np.ndarray`): the first test set to be used by the KNN classifier to predict
-    `PIE_y_test` (`np.ndarray`): the first test set's y_label to be used to compute error rate
-    `MY_X_test` (`np.ndarray`): the second test set to be used by the KNN classifier to predict
-    `MY_y_test` (`np.ndarray`): the second test set's y_label to be used to compute error rate
+    `train_set` (`FaceDataset`): the train data X to be used to train the KNN classifier
+    `test_set` (`FaceDataset`): the test data to be tested with the KNN classifier
     
     Returns
     -------
-    `PIE_error_rate` (`float`): list of PCA projected images on the train set
-    `MY_error_rate` (`float`): list of PCA projected images on the test set
+    `PIE_error_rate` (`float`): list of classification error rates on the train set
+    `MY_error_rate` (`float`): list of classification error rates on the test set
     """
     # Apply KNN classifications
-    KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
-    PIE_y_test_pred = KNN.predict(PIE_X_test).reshape(-1, 1)
-    MY_y_test_pred = KNN.predict(MY_X_test).reshape(-1, 1)
+    knn = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(train_set.X, train_set.y.ravel())
+    print(test_set.X_PIE.shape)
+    print(test_set.X_MY.shape)
+    PIE_y_test_pred = knn.predict(test_set.X_PIE).reshape(-1, 1)
+    MY_y_test_pred = knn.predict(test_set.X_MY).reshape(-1, 1)
     # Collect results
-    PIE_error_rate = (PIE_y_test_pred != PIE_y_test).sum() / PIE_y_test_pred.shape[0]
-    MY_error_rate = (MY_y_test_pred != MY_y_test).sum() / MY_y_test_pred.shape[0]
+    print(PIE_y_test_pred.shape)
+    print(test_set.y_PIE.shape)
+    PIE_error_rate = (PIE_y_test_pred != test_set.y_PIE).sum() / PIE_y_test_pred.shape[0]
+    MY_error_rate = (MY_y_test_pred != test_set.y_MY).sum() / MY_y_test_pred.shape[0]
 
     return PIE_error_rate, MY_error_rate
+
+def KNNClassifications(dimensions, proj_X_train_list, proj_X_test_list, y_train, y_test):
+    # Apply KNN Classifications on the PCA preprocessed images
+    PIE_error_rates = []
+    MY_error_rates = []
+    # For each dimension to be tested
+    for i in range(len(proj_X_train_list)):
+        print('For images with %d dimensions: ' % dimensions[i])
+        # Construct datasets for classification
+        print(proj_X_train_list[i].shape)
+        print(proj_X_test_list[i].shape)
+        proj_train_set = FaceDataset.split(proj_X_train_list[i], y_train, -3, name='train')
+        proj_test_set = FaceDataset.split(proj_X_test_list[i], y_test, -3, name='test')
+        # Apply KNN classifications
+        PIE_error_rate, MY_error_rate = KNNClassification(proj_train_set, proj_test_set)
+        # Collect results
+        PIE_error_rates.append(PIE_error_rate)
+        MY_error_rates.append(MY_error_rate)
+
+    return PIE_error_rates, MY_error_rates
 
 def showErrorRates(x, PIE_error_rates, MY_error_rates):
     """
@@ -246,23 +280,7 @@ def showErrorRates(x, PIE_error_rates, MY_error_rates):
     plt.show()
     return
 
-def KNNClassification(X_train_list, y_train, proj_X_test_list, dimensions):
-    # Apply KNN Classifications on the PCA preprocessed images
-    PIE_error_rates = []
-    MY_error_rates = []
-    # For each dimension to be tested
-    for i in range(len(X_train_list)):
-        print('For images with %d dimensions: ' % dimensions[i])
-        # Split X_test into PIE and MY datasets
-        proj_PIE_X_test = proj_X_test_list[i][:-3,:]
-        proj_MY_X_test = proj_X_test_list[i][-3:,:]
-        # Apply KNN classifications
-        PIE_error_rate, MY_error_rate = KNNClassification(X_train_list[i], y_train, proj_PIE_X_test, PIE_y_test, proj_MY_X_test, MY_y_test)
-        # Collect results
-        PIE_error_rates.append(PIE_error_rate)
-        MY_error_rates.append(MY_error_rate)
-
-def applyLDAs(X_train, y_train, X_test, dimensions) -> tuple:
+def applyLDAs(dimensions, X_train, y_train, X_test) -> tuple:
     """
     Apply the train data to fit a series of LDAs with different dimensions and show the reconstructed images
 
@@ -302,50 +320,37 @@ def main():
     data_path = '/home/ss/ss_ws/face-recognition/data'
 
     # Read 500 images from the train set and all from the test set
-    PIE_X_train, MY_X_train, PIE_y_train, MY_y_train = readImageData(data_path, set='train', num_PIE_imgs=500)
-    PIE_X_test, MY_X_test, PIE_y_test, MY_y_test = readImageData(data_path, set='test')
-
-    # Stack all image vectors together forming train and test sets
-    dataset = FaceDataset(PIE_X_train, PIE_y_train, MY_X_train, MY_y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test)
+    train_set = readImageData(data_path, set='train', num_PIE_imgs=500)
+    test_set = readImageData(data_path, set='test')
 
     # Apply PCA on 3D (which also included 2D) and visualize results
-    getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=show_pca_result)
+    getPCA3Results(train_set, show_plot=show_pca_result)
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     dimensions = [40, 80, 200]
-    proj_X_train_list, proj_X_test_list = applyPCAs(X_train, X_test, dimensions, show_samples=show_num_samples)
+    proj_X_train_list, proj_X_test_list = applyPCAs(dimensions, train_set.X, test_set.X, show_samples=show_num_samples)
     
-    # Apply KNN Classifications on the PCA preprocessed images
-    PIE_error_rates = []
-    MY_error_rates = []
-    # For each dimension to be tested
-    for i in range(len(proj_X_train_list)):
-        print('For images with %d dimensions: ' % dimensions[i])
-        # Split X_test into PIE and MY datasets
-        proj_PIE_X_test = proj_X_test_list[i][:-3,:]
-        proj_MY_X_test = proj_X_test_list[i][-3:,:]
-        # Apply KNN classifications
-        PIE_error_rate, MY_error_rate = KNNClassification(proj_X_train_list[i], y_train, proj_PIE_X_test, PIE_y_test, proj_MY_X_test, MY_y_test)
-        # Collect results
-        PIE_error_rates.append(PIE_error_rate)
-        MY_error_rates.append(MY_error_rate)
+    # Apply KNN Classifications on the PCA preprocessed image lists
+    # print(train_set.y[-1])
+    # print(test_set.y[-105])
+    PIE_error_rates, MY_error_rates = KNNClassifications(dimensions, proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
 
-    # Apply KNN Classification on the original images
-    print('For original images with %d dimensions: ' % X_train.shape[1])
-    PIE_error_rate, MY_error_rate = KNNClassification(X_train, y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test)
+    # Apply KNN Classification on the original images (as a baseline for comparison later)
+    print('For original images with %d dimensions: ' % train_set.X.shape[1])
+    PIE_error_rate, MY_error_rate = KNNClassification(train_set, test_set)
     # Collect results
     PIE_error_rates.append(PIE_error_rate)
     MY_error_rates.append(MY_error_rate)
     
     # Visualize KNN classification error rates
-    dimensions.append(PIE_X_test.shape[1])
+    dimensions.append(train_set.X.shape[1])
     showErrorRates(dimensions, PIE_error_rates, MY_error_rates)
 
     print('Finished PCA Processing')
 
     # Apply LDA to reduce the dimensionalities of the original images
     dimensions = [2, 3, 9]
-    proj_X_train_list, proj_X_test_list = applyLDAs(X_train, y_train, X_test, dimensions)
+    proj_X_train_list, proj_X_test_list = applyLDAs(dimensions, train_set.X, train_set.y, test_set.X)
     
     # Read the whole train and test set
 
