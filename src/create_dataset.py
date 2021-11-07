@@ -9,13 +9,13 @@ def splitPIEDataset(dataset_path, train_set_path, test_set_path) ->  None:
     Split the PIE dataset into train and test sets
 
     Parameters
-    ---
-    `dataset_path`: `string`, path to the PIE dataset
-    `train_set_path`: `string`, path to the output train set
-    `test_set_path`: `string`, path to the output test set
+    ----------
+    `dataset_path` (`string`): path to the PIE dataset
+    `train_set_path` (`string`): path to the output train set
+    `test_set_path` (`string`): path to the output test set
 
     Returns
-    ---
+    -------
     `None`
     """
 
@@ -64,11 +64,11 @@ def convertRGB2BW(folder_path) ->  None:
     Convert color imgs in `folder_path` to binary imgs
 
     Parameters
-    ---
-    `folder_path`: `string`, path to directory
+    ----------
+    `folder_path` (`string`): path to directory
 
     Returns
-    ---
+    -------
     `None`
     """
     img_files = os.listdir(folder_path)

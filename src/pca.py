@@ -8,22 +8,46 @@ from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
 
+class FaceDataset:
+    """
+    Customized data structure for storing all face images in a organized way
+
+    Arrtributes:
+    ----------
+
+
+    """
+    def __init__(self, PIE_X_train, PIE_y_train, MY_X_train, MY_y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test):
+        self.PIE_X_train = PIE_X_train
+        self.PIE_y_train = PIE_y_train
+        self.MY_X_train = MY_X_train
+        self.MY_y_train = MY_y_train
+        self.PIE_X_test = PIE_X_test
+        self.PIE_y_test = PIE_y_test
+        self.MY_X_test = MY_X_test
+        self.MY_y_test = MY_y_test
+        # Stack all image vectors together forming train and test sets
+        self.X_train = np.vstack((self.PIE_X_train, self.MY_X_train))
+        self.y_train = np.vstack((self.PIE_y_train, self.MY_y_train))
+        self.X_test = np.vstack((self.PIE_X_test, self.MY_X_test))
+        self.y_test = np.vstack((self.PIE_y_test, self.MY_y_test))
+
 def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
     """
     Read the PIE dataset and my_photo dataset
 
     Parameters
-    ---
-    `data_path`: `string`, path to the data folder
-    `set`: `string`, can be either `train` or `test`
-    `num_PIE_imgs`: `int`, number of PIE images to sample
+    ----------
+    `data_path` (`string`): path to the data folder
+    `set` (`string`): can be either `train` or `test`
+    `num_PIE_imgs` (`int`): number of PIE images to sample
 
     Returns
-    ---
-    `selected_PIE_imgs`: `np.ndarray`, a tensor made of vertically stacked selected PIE img vectors
-    `MY_imgs`: `np.ndarray`, a tensor made of vertically stacked selected my_photo img vectors
-    `selected_PIE_lables`: `np.ndarray`, labels of the selected PIE img vectors
-    `MY_lables`: `np.ndarray`,  labels of the selected my_photo img vectors
+    -------
+    `selected_PIE_imgs` (`np.ndarray`): a tensor made of vertically stacked selected PIE img vectors
+    `MY_imgs` (`np.ndarray`): a tensor made of vertically stacked selected my_photo img vectors
+    `selected_PIE_lables` (`np.ndarray`): labels of the selected PIE img vectors
+    `MY_lables` (`np.ndarray`):  labels of the selected my_photo img vectors
     """
     # List all subjects in set
     set_path = os.path.join(data_path, set)
@@ -74,15 +98,15 @@ def getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=True) -> None:
     Apply the train data to fit the PCA on 3D and plot the results in 2D and 3D
 
     Parameters
-    ---
-    `X_train`: `np.ndarray`, the train data to be used to fit the PCA algorithm
-    `PIE_X_train`: `np.ndarray`, the first set of train data to be transformed by PCA
-    `MY_X_train`: `np.ndarray`, the second set of train data to be transformed by PCA
-    `img_shape`: `np.array`, the shape of the original images for display
-    `show_plot`: `bool`, if the results should be plotted, default as `True`
+    ----------
+    `X_train` (`np.ndarray`): the train data to be used to fit the PCA algorithm
+    `PIE_X_train` (`np.ndarray`): the first set of train data to be transformed by PCA
+    `MY_X_train` (`np.ndarray`): the second set of train data to be transformed by PCA
+    `img_shape` (`np.array`): the shape of the original images for display
+    `show_plot` (`bool`): if the results should be plotted, default as `True`
 
     Returns
-    ---
+    -------
     `None`
     """
     # Apply PCA on 3D (which also included 2D)
@@ -127,16 +151,16 @@ def applyPCAs(X_train, X_test, dimensions, show_samples=5) -> tuple:
     Apply the train data to fit a series of PCAs with different dimensions and show the reconstructed images
 
     Parameters
-    ---
-    `X_train`: `np.ndarray`, the train data to be used to fit the PCA algorithm
-    `dimensions`: `list[int]`, list of PCA dimensions to be tested
-    `X_test`: `np.ndarray`, the test data to be transformed by the PCA algorithm
-    `show_samples`: `int`, the number of example results to display after done, `0` for no output, default as `5`
+    ----------
+    `X_train` (`np.ndarray`): the train data to be used to fit the PCA algorithm
+    `dimensions` (`list[int]`): list of PCA dimensions to be tested
+    `X_test` (`np.ndarray`): the test data to be transformed by the PCA algorithm
+    `show_samples` (`int`): the number of example results to display after done, `0` for no output, default as `5`
     
     Returns
-    ---
-    `proj_X_train_list`: `list[np.ndarray]`, list of train set images after PCA dimensionality reduction
-    `proj_X_test_list`: `list[np.ndarray]`, list of test set images after PCA dimensionality reduction
+    -------
+    `proj_X_train_list` (`list[np.ndarray]`): list of train set images after PCA dimensionality reduction
+    `proj_X_test_list` (`list[np.ndarray]`): list of test set images after PCA dimensionality reduction
     """
     # Apply PCA on a list of dimensions
     pca_list = []
@@ -175,18 +199,18 @@ def KNNClassification(X_train, y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_
     Apply KNN classification on the train data and predict on two separate sets
 
     Parameters
-    ---
-    `X_train`: `np.ndarray`, the train data X to be used to fit the KNN classifier
-    `y_train`: `np.ndarray`, the train data y to be used to fit the KNN classifier
-    `PIE_X_test`: `np.ndarray`, the first test set to be used by the KNN classifier to predict
-    `PIE_y_test`: `np.ndarray`, the first test set's y_label to be used to compute error rate
-    `MY_X_test`: `np.ndarray`, the second test set to be used by the KNN classifier to predict
-    `MY_y_test`: `np.ndarray`, the second test set's y_label to be used to compute error rate
+    ----------
+    `X_train` (`np.ndarray`): the train data X to be used to fit the KNN classifier
+    `y_train` (`np.ndarray`): the train data y to be used to fit the KNN classifier
+    `PIE_X_test` (`np.ndarray`): the first test set to be used by the KNN classifier to predict
+    `PIE_y_test` (`np.ndarray`): the first test set's y_label to be used to compute error rate
+    `MY_X_test` (`np.ndarray`): the second test set to be used by the KNN classifier to predict
+    `MY_y_test` (`np.ndarray`): the second test set's y_label to be used to compute error rate
     
     Returns
-    ---
-    `PIE_error_rate`: `float`, list of PCA projected images on the train set
-    `MY_error_rate`: `float`, list of PCA projected images on the test set
+    -------
+    `PIE_error_rate` (`float`): list of PCA projected images on the train set
+    `MY_error_rate` (`float`): list of PCA projected images on the test set
     """
     # Apply KNN classifications
     KNN = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(X_train, y_train.ravel())
@@ -203,13 +227,13 @@ def showErrorRates(x, PIE_error_rates, MY_error_rates):
     Plot the error rate graph based on the given data
 
     Parameters
-    ---
-    `x`: `list[]`, list of values for the x axis
-    `PIE_error_rates`: `list[np.ndarray]`, list of error rates on PIE set
-    `MY_error_rates`: `list[np.ndarray]`, list of error rates on MY set
+    ----------
+    `x` (`list[]`): list of values for the x axis
+    `PIE_error_rates` (`list[np.ndarray]`): list of error rates on PIE set
+    `MY_error_rates` (`list[np.ndarray]`): list of error rates on MY set
     
     Returns
-    ---
+    -------
     `None`
     """
     # Visualize KNN classification error rates
@@ -222,22 +246,37 @@ def showErrorRates(x, PIE_error_rates, MY_error_rates):
     plt.show()
     return
 
+def KNNClassification(X_train_list, y_train, proj_X_test_list, dimensions):
+    # Apply KNN Classifications on the PCA preprocessed images
+    PIE_error_rates = []
+    MY_error_rates = []
+    # For each dimension to be tested
+    for i in range(len(X_train_list)):
+        print('For images with %d dimensions: ' % dimensions[i])
+        # Split X_test into PIE and MY datasets
+        proj_PIE_X_test = proj_X_test_list[i][:-3,:]
+        proj_MY_X_test = proj_X_test_list[i][-3:,:]
+        # Apply KNN classifications
+        PIE_error_rate, MY_error_rate = KNNClassification(X_train_list[i], y_train, proj_PIE_X_test, PIE_y_test, proj_MY_X_test, MY_y_test)
+        # Collect results
+        PIE_error_rates.append(PIE_error_rate)
+        MY_error_rates.append(MY_error_rate)
 
 def applyLDAs(X_train, y_train, X_test, dimensions) -> tuple:
     """
     Apply the train data to fit a series of LDAs with different dimensions and show the reconstructed images
 
     Parameters
-    ---
-    `X_train`: `np.ndarray`, the train data to be used to fit the LDA algorithm
-    `y_train`: `np.ndarray`, the train data label to be used to fit the LDA algorithm
-    `X_test`: `np.ndarray`, the test data to be transformed by the LDA algorithm
-    `dimensions`: `list[int]`, list of LDA dimensions to be tested
+    ----------
+    `X_train` (`np.ndarray`): the train data to be used to fit the LDA algorithm
+    `y_train` (`np.ndarray`): the train data label to be used to fit the LDA algorithm
+    `X_test` (`np.ndarray`): the test data to be transformed by the LDA algorithm
+    `dimensions` (`list[int]`): list of LDA dimensions to be tested
     
     Returns
-    ---
-    `proj_X_train_list`: `list[np.ndarray]`, list of train set images after LDA dimensionality reduction
-    `proj_X_test_list`: `list[np.ndarray]`, list of test set images after LDA dimensionality reduction
+    -------
+    `proj_X_train_list` (`list[np.ndarray]`): list of train set images after LDA dimensionality reduction
+    `proj_X_test_list` (`list[np.ndarray]`): list of test set images after LDA dimensionality reduction
     """
     # Apply LDA on a list of dimensions
     lda_list = []
@@ -267,10 +306,7 @@ def main():
     PIE_X_test, MY_X_test, PIE_y_test, MY_y_test = readImageData(data_path, set='test')
 
     # Stack all image vectors together forming train and test sets
-    X_train = np.vstack((PIE_X_train, MY_X_train))
-    y_train = np.vstack((PIE_y_train, MY_y_train))
-    X_test = np.vstack((PIE_X_test, MY_X_test))
-    y_test = np.vstack((PIE_y_test, MY_y_test))
+    dataset = FaceDataset(PIE_X_train, PIE_y_train, MY_X_train, MY_y_train, PIE_X_test, PIE_y_test, MY_X_test, MY_y_test)
 
     # Apply PCA on 3D (which also included 2D) and visualize results
     getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=show_pca_result)
@@ -288,8 +324,6 @@ def main():
         # Split X_test into PIE and MY datasets
         proj_PIE_X_test = proj_X_test_list[i][:-3,:]
         proj_MY_X_test = proj_X_test_list[i][-3:,:]
-        print(proj_PIE_X_test.shape)
-        print(PIE_y_test.shape)
         # Apply KNN classifications
         PIE_error_rate, MY_error_rate = KNNClassification(proj_X_train_list[i], y_train, proj_PIE_X_test, PIE_y_test, proj_MY_X_test, MY_y_test)
         # Collect results
