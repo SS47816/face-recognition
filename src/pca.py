@@ -171,7 +171,7 @@ def getPCA3Results(train: FaceDataset, show_plot: bool=True) -> None:
         plt.show()
     return
 
-def applyPCAs(dimensions: list, X_train: np.ndarray, X_test: np.ndarray, show_samples: int=5) -> tuple:
+def applyPCAs(dims: list, X_train: np.ndarray, X_test: np.ndarray, show_samples: int=5) -> tuple:
     """
     Apply the train data to fit a series of PCAs with different dimensions and show the reconstructed images
 
@@ -192,8 +192,8 @@ def applyPCAs(dimensions: list, X_train: np.ndarray, X_test: np.ndarray, show_sa
     proj_X_train_list = []
     proj_X_test_list = []
     rec_imgs_list = []
-    for i in range(len(dimensions)):
-        pca_list.append(PCA(dimensions[i]))
+    for i in range(len(dims)):
+        pca_list.append(PCA(dims[i]))
         # Fit PCA on the images
         proj_X_train_list.append(pca_list[i].fit_transform(X_train))
         proj_X_test_list.append(pca_list[i].transform(X_test))
@@ -212,7 +212,7 @@ def applyPCAs(dimensions: list, X_train: np.ndarray, X_test: np.ndarray, show_sa
             ax.imshow(X_train[i, :].reshape(img_shape), cmap='gray')
             for j in range(3):
                 ax = fig.add_subplot(1, 4, j + 2, xticks=[], yticks=[])
-                ax.title.set_text('D = %d' %dimensions[j])
+                ax.title.set_text('D = %d' %dims[j])
                 ax.imshow(rec_imgs_list[j][i, :].reshape(img_shape), cmap='gray')
             plt.show()
 
@@ -272,8 +272,8 @@ def showErrorRates(x: list, error_rates: list) -> None:
 
     Parameters
     ----------
-    `x` (`list[]`): list of component dimensions used (x values)
-    `error_rates` (`list[np.ndarray]`): list of error rates on PIE and MY test sets (y values)
+    `x` (`list[]`): list of values used for x axis
+    `error_rates` (`list[np.ndarray]`): list of error rates on PIE and MY test sets (y axis)
     
     Returns
     -------
@@ -289,7 +289,7 @@ def showErrorRates(x: list, error_rates: list) -> None:
     plt.show()
     return
 
-def applyLDAs(dimensions: list, X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray) -> tuple:
+def applyLDAs(dims: list, X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray) -> tuple:
     """
     Apply the train data to fit a series of LDAs with different dimensions and show the reconstructed images
 
@@ -310,8 +310,8 @@ def applyLDAs(dimensions: list, X_train: np.ndarray, y_train: np.ndarray, X_test
     proj_X_train_list = []
     proj_X_test_list = []
 
-    for i in range(len(dimensions)):
-        lda_list.append(LinearDiscriminantAnalysis(n_components=dimensions[i]))
+    for i in range(len(dims)):
+        lda_list.append(LinearDiscriminantAnalysis(n_components=dims[i]))
         # Fit LDA on the images
         lda_list[i].fit(X_train, y_train.ravel())
         proj_X_train_list.append(lda_list[i].transform(X_train))
@@ -336,24 +336,27 @@ def main():
     getPCA3Results(train_set, show_plot=show_pca_result)
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
-    dimensions = [40, 80, 200]
-    proj_X_train_list, proj_X_test_list = applyPCAs(dimensions, train_set.X, test_set.X, show_samples=show_num_samples)
+    pca_dims = [40, 80, 200]
+    proj_X_train_list, proj_X_test_list = applyPCAs(pca_dims, train_set.X, test_set.X, show_samples=show_num_samples)
     
     # Apply KNN Classifications on the PCA preprocessed image lists
-    pca_error_rates = KNNClassifications(dimensions, proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
+    pca_error_rates = KNNClassifications(proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
 
     # Apply KNN Classification on the original images (as a baseline for comparison later)
-    print('For original images with %d dimensions: ' % train_set.X.shape[1])
-    pca_error_rates = np.append(pca_error_rates, KNNClassification(train_set, test_set), axis=1)
+    pca_dims.append(train_set.X.shape[1])
+    baseline_error_rate = KNNClassification(train_set, test_set)
+    pca_error_rates = np.append(pca_error_rates, baseline_error_rate, axis=1)
     
     # Visualize KNN classification error rates
-    dimensions.append(train_set.X.shape[1])
-    showErrorRates(dimensions, pca_error_rates)
-    print('Finished PCA Processing')
+    showErrorRates(pca_dims, pca_error_rates)
+    print('Finished Task 1: PCA')
 
     # Apply LDA to reduce the dimensionalities of the original images
-    dimensions = [2, 3, 9]
-    proj_X_train_list, proj_X_test_list = applyLDAs(dimensions, train_set.X, train_set.y, test_set.X)
+    lda_dims = [2, 3, 9]
+    proj_X_train_list, proj_X_test_list = applyLDAs(lda_dims, train_set.X, train_set.y, test_set.X)
+    lda_error_rates = KNNClassifications(proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
+    showErrorRates(lda_dims, lda_error_rates)
+    print('Finished Task 2: LDA')
     
     # Read the whole train and test set
 
