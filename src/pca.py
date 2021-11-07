@@ -4,6 +4,8 @@ import numpy as np
 import cv2
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
 
 def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
@@ -67,8 +69,7 @@ def readImageData(data_path, set='train', num_PIE_imgs=-1) -> tuple:
         print('Read %d my_photo from %s' % (len(MY_imgs), set))
         return np.vstack(PIE_imgs), np.vstack(MY_imgs), np.vstack(PIE_lables), np.vstack(MY_lables)
 
-
-def getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=True) -> None:
+def getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=True) -> None:
     """
     Apply the train data to fit the PCA on 3D and plot the results in 2D and 3D
 
@@ -93,6 +94,7 @@ def getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=True) 
     # Visualize results
     if show_plot:
         print('Visualizing Results... ')
+        img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
         plt.style.use('seaborn-whitegrid')
         fig = plt.figure(figsize=plt.figaspect(0.5))
         # 2D Plot
@@ -120,8 +122,7 @@ def getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=True) 
         plt.show()
     return
 
-
-def applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=5) -> tuple:
+def applyPCAs(X_train, X_test, dimensions, show_samples=5) -> tuple:
     """
     Apply the train data to fit a series of PCAs with different dimensions and show the reconstructed images
 
@@ -129,15 +130,15 @@ def applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=5) -> tuple:
     ---
     `X_train`: `np.ndarray`, the train data to be used to fit the PCA algorithm
     `dimensions`: `list[int]`, list of PCA dimensions to be tested
-    `img_shape`: `np.array`, the shape of the original images for display
+    `X_test`: `np.ndarray`, the test data to be transformed by the PCA algorithm
     `show_samples`: `int`, the number of example results to display after done, `0` for no output, default as `5`
     
     Returns
     ---
-    `proj_X_train_list`: `list[np.ndarray]`, list of PCA projected images on the train set
-    `proj_X_test_list`: `list[np.ndarray]`, list of PCA projected images on the test set
+    `proj_X_train_list`: `list[np.ndarray]`, list of train set images after PCA dimensionality reduction
+    `proj_X_test_list`: `list[np.ndarray]`, list of test set images after PCA dimensionality reduction
     """
-    # Apply PCA on 40, 80, 200 dimensions
+    # Apply PCA on a list of dimensions
     pca_list = []
     proj_X_train_list = []
     proj_X_test_list = []
@@ -152,6 +153,7 @@ def applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=5) -> tuple:
         rec_imgs_list.append(pca_list[i].inverse_transform(proj_X_train_list[i]))
 
     # Visualize reconstructed images
+    img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
     if show_samples > 0:
         print('Showing %d example results here' % show_samples)
         for i in range(show_samples):
@@ -220,6 +222,38 @@ def showErrorRates(x, PIE_error_rates, MY_error_rates):
     plt.show()
     return
 
+
+def applyLDAs(X_train, y_train, X_test, dimensions) -> tuple:
+    """
+    Apply the train data to fit a series of LDAs with different dimensions and show the reconstructed images
+
+    Parameters
+    ---
+    `X_train`: `np.ndarray`, the train data to be used to fit the LDA algorithm
+    `y_train`: `np.ndarray`, the train data label to be used to fit the LDA algorithm
+    `X_test`: `np.ndarray`, the test data to be transformed by the LDA algorithm
+    `dimensions`: `list[int]`, list of LDA dimensions to be tested
+    
+    Returns
+    ---
+    `proj_X_train_list`: `list[np.ndarray]`, list of train set images after LDA dimensionality reduction
+    `proj_X_test_list`: `list[np.ndarray]`, list of test set images after LDA dimensionality reduction
+    """
+    # Apply LDA on a list of dimensions
+    lda_list = []
+    proj_X_train_list = []
+    proj_X_test_list = []
+
+    for i in range(len(dimensions)):
+        lda_list.append(LinearDiscriminantAnalysis(n_components=dimensions[i]))
+        # Fit LDA on the images
+        lda_list[i].fit(X_train, y_train.ravel())
+        proj_X_train_list.append(lda_list[i].transform(X_train))
+        proj_X_test_list.append(lda_list[i].transform(X_test))
+
+    return proj_X_train_list, proj_X_test_list
+
+
 def main():
     # Display Settings
     show_pca_result = False      # If we want to plot the PCA results
@@ -238,16 +272,13 @@ def main():
     X_test = np.vstack((PIE_X_test, MY_X_test))
     y_test = np.vstack((PIE_y_test, MY_y_test))
 
-    img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
-
     # Apply PCA on 3D (which also included 2D) and visualize results
-    getPCA3Results(X_train, PIE_X_train, MY_X_train, img_shape, show_plot=show_pca_result)
+    getPCA3Results(X_train, PIE_X_train, MY_X_train, show_plot=show_pca_result)
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     dimensions = [40, 80, 200]
-    proj_X_train_list, proj_X_test_list = applyPCAs(X_train, X_test, dimensions, img_shape, show_samples=show_num_samples)
+    proj_X_train_list, proj_X_test_list = applyPCAs(X_train, X_test, dimensions, show_samples=show_num_samples)
     
-    # KNNClassification()
     # Apply KNN Classifications on the PCA preprocessed images
     PIE_error_rates = []
     MY_error_rates = []
@@ -277,6 +308,13 @@ def main():
     showErrorRates(dimensions, PIE_error_rates, MY_error_rates)
 
     print('Finished PCA Processing')
+
+    # Apply LDA to reduce the dimensionalities of the original images
+    dimensions = [2, 3, 9]
+    proj_X_train_list, proj_X_test_list = applyLDAs(X_train, y_train, X_test, dimensions)
+    
+    # Read the whole train and test set
+
     return
 
 if __name__ == "__main__":
