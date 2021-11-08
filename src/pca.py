@@ -248,7 +248,7 @@ def KNNClassification(train_set: FaceDataset, test_set: FaceDataset) -> np.ndarr
     `np.ndarray`: classification error rates with a shape of `[2, 1]`
     """
     # Apply KNN classifications
-    knn = KNeighborsClassifier(n_neighbors=5, weights='distance', metric='euclidean').fit(train_set.X, train_set.y.ravel())
+    knn = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(train_set.X, train_set.y.ravel())
     PIE_y_test_pred = knn.predict(test_set.X_PIE).reshape(-1, 1)
     MY_y_test_pred = knn.predict(test_set.X_MY).reshape(-1, 1)
     # Collect results
@@ -296,6 +296,8 @@ def showErrorRates(x: list, error_rates: list) -> None:
     `None`
     """
     # Visualize KNN classification error rates
+    print(x)
+    print(error_rates)
     fig, ax = plt.subplots()
     line1, = ax.plot(x, error_rates[0], marker='o', color='c', dashes=[6, 2], label='PIE test set')
     line2, = ax.plot(x, error_rates[1], marker='*', color='r', dashes=[4, 2], label='MY test set')
@@ -338,8 +340,9 @@ def applyLDAs(dims: list, X_train: np.ndarray, y_train: np.ndarray, X_test: np.n
 
 def main():
     # Display Settings
-    show_pca_result = False      # If we want to plot the PCA results
+    show_pca_result = True      # If we want to plot the PCA results
     show_num_samples = 0        # Number of example results to display after done, `0` for no output
+    show_lda_result = True      # If we want to plot the PCA results
 
     # Set destination paths
     data_path = '/home/ss/ss_ws/face-recognition/data'
@@ -371,9 +374,9 @@ def main():
     lda_dims = [2, 3, 9]
     proj_X_train_list, proj_X_test_list = applyLDAs(lda_dims, train_set.X, train_set.y, test_set.X)
     # Visualize results
-    if show_plot:
+    if show_lda_result:
         # Plot the projected data onto 2D and 3D scatter plots
-        plotProjectedData(proj_PIE_3d, proj_MY_3d)
+        plotProjectedData(proj_X_train_list[1][:-7,:], proj_X_train_list[1][-7:,:])
 
     lda_error_rates = KNNClassifications(proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
     showErrorRates(lda_dims, lda_error_rates)
