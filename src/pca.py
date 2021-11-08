@@ -121,7 +121,38 @@ def readImageData(data_path: str, set: str='train', num_PIE_imgs: int=-1) -> Fac
         print('Read %d my_photo from %s' % (len(MY_imgs), set))
         return FaceDataset(np.vstack(PIE_imgs), np.vstack(PIE_lables),np.vstack(MY_imgs), np.vstack(MY_lables), name=set)
 
-def getPCA3Results(train: FaceDataset, show_plot: bool=True) -> None:
+def plotProjectedData(proj_PIE_3d: np.ndarray, proj_MY_3d: np.ndarray) -> None:
+    """
+    Plot the projected data onto 2D and 3D scatter plots respectively
+
+    Parameters
+    ----------
+    `proj_PIE_3d` (`np.ndarray`): projected data 1 to be plotted
+    `proj_MY_3d` (`np.ndarray`): projected data 2 to be plotted
+
+    Returns
+    -------
+    `None`
+    """
+    print('Visualizing Results... ')
+    plt.style.use('seaborn-whitegrid')
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    # 2D Plot
+    ax = fig.add_subplot(1, 2, 1)
+    ax.scatter(proj_PIE_3d[:, 0], proj_PIE_3d[:, 1], s = 10, c = 'c')
+    ax.scatter(proj_MY_3d[:, 0], proj_MY_3d[:, 1], s = 15, c = 'r')
+    ax.set_xlabel('Principle Axis 1')
+    ax.set_ylabel('Principle Axis 2')
+    # 3D Plot
+    ax = fig.add_subplot(1, 2, 2, projection='3d')
+    ax.scatter(proj_PIE_3d[:, 0], proj_PIE_3d[:, 1], proj_PIE_3d[:, 2], s = 10, c = 'c')
+    ax.scatter(proj_MY_3d[:, 0], proj_MY_3d[:, 1], proj_MY_3d[:, 2], s = 15, c = 'r')
+    ax.set_xlabel('Principle Axis 1')
+    ax.set_ylabel('Principle Axis 2')
+    ax.set_zlabel('Principle Axis 3')
+    plt.show()
+
+def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
     """
     Apply the train data to fit the PCA on 3D and plot the results in 2D and 3D
 
@@ -137,31 +168,15 @@ def getPCA3Results(train: FaceDataset, show_plot: bool=True) -> None:
     # Apply PCA on 3D (which also included 2D)
     pca_3 = PCA(3)
     pca_3.fit(train.X)
-    proj_PIE_imgs = pca_3.transform(train.X_PIE)
-    proj_MY_imgs = pca_3.transform(train.X_MY)
+    proj_PIE_3d = pca_3.transform(train.X_PIE)
+    proj_MY_3d = pca_3.transform(train.X_MY)
     
     # Visualize results
     if show_plot:
-        print('Visualizing Results... ')
-        img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
-        plt.style.use('seaborn-whitegrid')
-        fig = plt.figure(figsize=plt.figaspect(0.5))
-        # 2D Plot
-        ax = fig.add_subplot(1, 2, 1)
-        ax.scatter(proj_PIE_imgs[:, 0], proj_PIE_imgs[:, 1], s = 10, c = 'c')
-        ax.scatter(proj_MY_imgs[:, 0], proj_MY_imgs[:, 1], s = 15, c = 'r')
-        ax.set_xlabel('Principle Axis 1')
-        ax.set_ylabel('Principle Axis 2')
-        # 3D Plot
-        ax = fig.add_subplot(1, 2, 2, projection='3d')
-        ax.scatter(proj_PIE_imgs[:, 0], proj_PIE_imgs[:, 1], proj_PIE_imgs[:, 2], s = 10, c = 'c')
-        ax.scatter(proj_MY_imgs[:, 0], proj_MY_imgs[:, 1], proj_MY_imgs[:, 2], s = 15, c = 'r')
-        ax.set_xlabel('Principle Axis 1')
-        ax.set_ylabel('Principle Axis 2')
-        ax.set_zlabel('Principle Axis 3')
-        plt.show()
-
+        # Plot the projected data onto 2D and 3D scatter plots
+        plotProjectedData(proj_PIE_3d, proj_MY_3d)
         # Plot the mean face and eigen faces
+        img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
         fig = plt.figure(figsize=(16, 6))
         ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
         ax.imshow(pca_3.mean_.reshape(img_shape), cmap='gray')
@@ -169,6 +184,7 @@ def getPCA3Results(train: FaceDataset, show_plot: bool=True) -> None:
             ax = fig.add_subplot(1, 4, i + 2, xticks=[], yticks=[])
             ax.imshow(pca_3.components_[i].reshape(img_shape), cmap='gray')
         plt.show()
+        
     return
 
 def applyPCAs(dims: list, X_train: np.ndarray, X_test: np.ndarray, show_samples: int=5) -> tuple:
@@ -333,7 +349,7 @@ def main():
     test_set = readImageData(data_path, set='test')
 
     # Apply PCA on 3D (which also included 2D) and visualize results
-    getPCA3Results(train_set, show_plot=show_pca_result)
+    plotPCA3DResults(train_set, show_plot=show_pca_result)
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     pca_dims = [40, 80, 200]
@@ -354,6 +370,11 @@ def main():
     # Apply LDA to reduce the dimensionalities of the original images
     lda_dims = [2, 3, 9]
     proj_X_train_list, proj_X_test_list = applyLDAs(lda_dims, train_set.X, train_set.y, test_set.X)
+    # Visualize results
+    if show_plot:
+        # Plot the projected data onto 2D and 3D scatter plots
+        plotProjectedData(proj_PIE_3d, proj_MY_3d)
+
     lda_error_rates = KNNClassifications(proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
     showErrorRates(lda_dims, lda_error_rates)
     print('Finished Task 2: LDA')
