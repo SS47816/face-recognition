@@ -382,7 +382,12 @@ def main():
     showErrorRates(lda_dims, lda_error_rates)
     print('Finished Task 2: LDA')
     
-    # Read the whole train and test set
+    # Read the whole train and test set (unlike the first time which we only sampled 500)
+    train_set = readImageData(data_path, set='train')
+    test_set = readImageData(data_path, set='test')
+    # Apply PCA preprocessing on all the images
+    pca_dims = [80, 200]
+    proj_X_train_list, proj_X_test_list = applyPCAs(pca_dims, train_set.X, test_set.X, show_samples=show_num_samples)
 
     return
 
