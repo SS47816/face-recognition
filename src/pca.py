@@ -187,37 +187,39 @@ def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
         
     return
 
-def applyPCAs(dims: list, X_train: np.ndarray, X_test: np.ndarray, show_samples: int=5) -> tuple:
+def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: int=5) -> tuple:
     """
     Apply the train data to fit a series of PCAs with different dimensions and show the reconstructed images
 
     Parameters
     ----------
     `dimensions` (`list[int]`): list of PCA dimensions to be tested
-    `X_train` (`np.ndarray`): the train data to be used to fit the PCA algorithm
-    `X_test` (`np.ndarray`): the test data to be transformed by the PCA algorithm
+    `train` (`FaceDataset`): the train data to be used to fit the PCA algorithm
+    `test` (`FaceDataset`): the test data to be transformed by the PCA algorithm
     `show_samples` (`int`): the number of example results to display after done, `0` for no output, default as `5`
     
     Returns
     -------
-    `list[np.ndarray]`: list of train set images after PCA dimensionality reduction
-    `list[np.ndarray]`: list of test set images after PCA dimensionality reduction
+    `list[FaceDataset]`: list of train set images after PCA dimensionality reduction
+    `list[FaceDataset]`: list of test set images after PCA dimensionality reduction
     """
     # Apply PCA on a list of dimensions
     pca_list = []
     proj_X_train_list = []
     proj_X_test_list = []
     rec_imgs_list = []
+    train_list = []
+    test_list = []
     for i in range(len(dims)):
         pca_list.append(PCA(dims[i]))
         # Fit PCA on the images
-        proj_X_train_list.append(pca_list[i].fit_transform(X_train))
-        proj_X_test_list.append(pca_list[i].transform(X_test))
+        proj_X_train_list.append(pca_list[i].fit_transform(train.X))
+        proj_X_test_list.append(pca_list[i].transform(test.X))
         # Reconstruct the images
         rec_imgs_list.append(pca_list[i].inverse_transform(proj_X_train_list[i]))
 
     # Visualize reconstructed images
-    img_shape = np.array([np.sqrt(X_train.shape[1]), np.sqrt(X_train.shape[1])], dtype=int)
+    img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
     if show_samples > 0:
         print('Showing %d example results here' % show_samples)
         for i in range(show_samples):
@@ -225,7 +227,7 @@ def applyPCAs(dims: list, X_train: np.ndarray, X_test: np.ndarray, show_samples:
             fig = plt.figure(figsize=(16, 6))
             ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
             ax.title.set_text('Original')
-            ax.imshow(X_train[i, :].reshape(img_shape), cmap='gray')
+            ax.imshow(train.X[i, :].reshape(img_shape), cmap='gray')
             for j in range(3):
                 ax = fig.add_subplot(1, 4, j + 2, xticks=[], yticks=[])
                 ax.title.set_text('D = %d' %dims[j])
