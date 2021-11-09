@@ -46,7 +46,7 @@ class FaceDataset:
         self.y = np.vstack((self.y_PIE, self.y_MY))
 
     @classmethod
-    def split(cls, X: np.ndarray, y: np.ndarray, split_idx: int, name :str=''):
+    def split(cls, X: np.ndarray, y: np.ndarray, name :str='train'):
         """
         Altaernative constructor, create the dataset by spliting the a whole set
 
@@ -57,6 +57,10 @@ class FaceDataset:
         `split_idx` (`int`): the index used to split the PIE set and MY set 
         `name` (`str`): the name of the set, can be either `train` or `test`
         """
+        if name == 'train':
+            split_idx = -7
+        elif name == 'test':
+            split_idx = -3
         X_PIE = X[:split_idx,:]
         y_PIE = y[:split_idx,:]
         X_MY = X[split_idx:,:]
@@ -197,7 +201,7 @@ def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: i
 
     Parameters
     ----------
-    `dimensions` (`list[int]`): list of PCA dimensions to be tested
+    `dims` (`list[int]`): list of PCA dimensions to be tested
     `train` (`FaceDataset`): the train data to be used to fit the PCA algorithm
     `test` (`FaceDataset`): the test data to be transformed by the PCA algorithm
     `show_samples` (`int`): the number of example results to display after done, `0` for no output, default as `5`
@@ -217,8 +221,8 @@ def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: i
         # Fit PCA on the images
         proj_train_X = pca_list[i].fit_transform(train.X)
         proj_test_X = pca_list[i].transform(test.X)
-        proj_train_list.append(FaceDataset.split(proj_train_X, train.y, -7, name='train'))
-        proj_test_list.append(FaceDataset.split(proj_test_X, train.y, -3, name='test'))
+        proj_train_list.append(FaceDataset.split(proj_train_X, train.y, name='train'))
+        proj_test_list.append(FaceDataset.split(proj_test_X, train.y, name='test'))
         # Reconstruct the images
         rec_imgs_list.append(pca_list[i].inverse_transform(proj_train_X))
 
@@ -310,35 +314,36 @@ def showErrorRates(x: list, error_rates: list) -> None:
     plt.show()
     return
 
-def applyLDAs(dims: list, X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray) -> tuple:
+def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
     """
     Apply the train data to fit a series of LDAs with different dimensions and show the reconstructed images
 
     Parameters
     ----------
-    `dimensions` (`list[int]`): list of LDA dimensions to be tested
-    `X_train` (`np.ndarray`): the train data to be used to fit the LDA algorithm
-    `y_train` (`np.ndarray`): the train data label to be used to fit the LDA algorithm
-    `X_test` (`np.ndarray`): the test data to be transformed by the LDA algorithm
+    `dims` (`list[int]`): list of LDA dimensions to be tested
+    `train` (`FaceDataset`): the train data to be used to fit the LDA algorithm
+    `test` (`FaceDataset`): the test data to be transformed by the LDA algorithm
     
     Returns
     -------
-    `list[np.ndarray]`: list of train set images after LDA dimensionality reduction
-    `list[np.ndarray]`: list of test set images after LDA dimensionality reduction
+    `list[FaceDataset]`: list of train set images after LDA dimensionality reduction
+    `list[FaceDataset]`: list of test set images after LDA dimensionality reduction
     """
     # Apply LDA on a list of dimensions
     lda_list = []
-    proj_X_train_list = []
-    proj_X_test_list = []
+    proj_train_list = []
+    proj_test_list = []
 
     for i in range(len(dims)):
         lda_list.append(LinearDiscriminantAnalysis(n_components=dims[i]))
         # Fit LDA on the images
-        lda_list[i].fit(X_train, y_train.ravel())
-        proj_X_train_list.append(lda_list[i].transform(X_train))
-        proj_X_test_list.append(lda_list[i].transform(X_test))
+        lda_list[i].fit(train.X, train.y.ravel())
+        proj_train_X = lda_list[i].fit_transform(train.X, train.y.ravel())
+        proj_test_X = lda_list[i].transform(test.X)
+        proj_train_list.append(FaceDataset.split(proj_train_X, train.y, name='train'))
+        proj_test_list.append(FaceDataset.split(proj_test_X, train.y, name='test'))
 
-    return proj_X_train_list, proj_X_test_list
+    return proj_train_list, proj_test_list
 
 
 def main():
@@ -378,13 +383,13 @@ def main():
 
     # Apply LDA to reduce the dimensionalities of the original images
     lda_dims = [2, 3, 9]
-    proj_X_train_list, proj_X_test_list = applyLDAs(lda_dims, train_set.X, train_set.y, test_set.X)
+    proj_train_list, proj_test_list = applyLDAs(lda_dims, train_set, test_set)
     # Visualize results
     if show_lda_result:
         # Plot the projected data onto 2D and 3D scatter plots
-        plotProjectedData(proj_X_train_list[1][:-7,:], proj_X_train_list[1][-7:,:])
+        plotProjectedData(proj_train_list[1].X_PIE, proj_train_list[1].X_MY)
 
-    lda_error_rates = KNNClassifications(proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
+    lda_error_rates = KNNClassifications(proj_train_list, proj_train_list)
     showErrorRates(lda_dims, lda_error_rates)
     print('Finished Task 2: LDA')
     
@@ -393,8 +398,10 @@ def main():
     test_set = readImageData(data_path, set='test')
     # Apply PCA preprocessing on all the images
     pca_dims = [80, 200]
-    proj_X_train_list, proj_X_test_list = applyPCAs(pca_dims, train_set.X, test_set.X, show_samples=show_num_samples)
+    proj_train_list, proj_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
 
+    
+    print('Done')
     return
 
 if __name__ == "__main__":
