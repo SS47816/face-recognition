@@ -222,7 +222,7 @@ def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: i
         proj_train_X = pca_list[i].fit_transform(train.X)
         proj_test_X = pca_list[i].transform(test.X)
         proj_train_list.append(FaceDataset.split(proj_train_X, train.y, name='train'))
-        proj_test_list.append(FaceDataset.split(proj_test_X, train.y, name='test'))
+        proj_test_list.append(FaceDataset.split(proj_test_X, test.y, name='test'))
         # Reconstruct the images
         rec_imgs_list.append(pca_list[i].inverse_transform(proj_train_X))
 
@@ -244,27 +244,27 @@ def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: i
 
     return proj_train_list, proj_test_list
 
-def KNNClassification(train_set: FaceDataset, test_set: FaceDataset) -> np.ndarray:
+def KNNClassification(train: FaceDataset, test: FaceDataset) -> np.ndarray:
     """
     Apply KNN classification on the training set data and predict on the test set
 
     Parameters
     ----------
-    `train_set` (`FaceDataset`): the train data X to be used to train the KNN classifier
-    `test_set` (`FaceDataset`): the test data to be tested with the KNN classifier
+    `train` (`FaceDataset`): the train data X to be used to train the KNN classifier
+    `test` (`FaceDataset`): the test data to be tested with the KNN classifier
     
     Returns
     -------
     `np.ndarray`: classification error rates with a shape of `[2, 1]`
     """
     # Apply KNN classifications
-    knn = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(train_set.X, train_set.y.ravel())
-    PIE_y_test_pred = knn.predict(test_set.X_PIE).reshape(-1, 1)
-    MY_y_test_pred = knn.predict(test_set.X_MY).reshape(-1, 1)
+    knn = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(train.X, train.y.ravel())
+    test_y_PIE_pred = knn.predict(test.X_PIE).reshape(-1, 1)
+    test_y_MY_pred = knn.predict(test.X_MY).reshape(-1, 1)
     # Collect results
     error_rate = np.zeros((2,1))
-    error_rate[0, 0] = (PIE_y_test_pred != test_set.y_PIE).sum() / PIE_y_test_pred.shape[0]
-    error_rate[1, 0] = (MY_y_test_pred != test_set.y_MY).sum() / MY_y_test_pred.shape[0]
+    error_rate[0, 0] = (test_y_PIE_pred != test.y_PIE).sum() / test_y_PIE_pred.shape[0]
+    error_rate[1, 0] = (test_y_MY_pred != test.y_MY).sum() / test_y_MY_pred.shape[0]
 
     return error_rate
 
@@ -285,7 +285,7 @@ def KNNClassifications(train_list: list, test_list: list) -> np.ndarray:
     # For each dimension to be tested
     for i in range(len(train_list)):
         # Apply KNN classifications and store results
-        error_rates = np.append(error_rates, KNNClassification(train_list[i], train_list[i]), axis=1)
+        error_rates = np.append(error_rates, KNNClassification(train_list[i], test_list[i]), axis=1)
 
     return error_rates
 
@@ -312,6 +312,7 @@ def showErrorRates(x: list, error_rates: list) -> None:
     ax.set_ylabel('KNN Classification Error Rate')
     ax.legend()
     plt.show()
+
     return
 
 def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
@@ -341,7 +342,7 @@ def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
         proj_train_X = lda_list[i].fit_transform(train.X, train.y.ravel())
         proj_test_X = lda_list[i].transform(test.X)
         proj_train_list.append(FaceDataset.split(proj_train_X, train.y, name='train'))
-        proj_test_list.append(FaceDataset.split(proj_test_X, train.y, name='test'))
+        proj_test_list.append(FaceDataset.split(proj_test_X, test.y, name='test'))
 
     return proj_train_list, proj_test_list
 
@@ -389,7 +390,7 @@ def main():
         # Plot the projected data onto 2D and 3D scatter plots
         plotProjectedData(proj_train_list[1].X_PIE, proj_train_list[1].X_MY)
 
-    lda_error_rates = KNNClassifications(proj_train_list, proj_train_list)
+    lda_error_rates = KNNClassifications(proj_train_list, proj_test_list)
     showErrorRates(lda_dims, lda_error_rates)
     print('Finished Task 2: LDA')
     
