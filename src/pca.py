@@ -2,10 +2,12 @@ import os
 import pathlib
 import random
 import numpy as np
+import pandas as pd
 import cv2
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 
 class FaceDataset:
@@ -270,7 +272,7 @@ def KNNClassification(train: FaceDataset, test: FaceDataset) -> np.ndarray:
 
 def KNNClassifications(train_list: list, test_list: list) -> np.ndarray:
     """
-    Apply KNN Classifications on the (preprocessed) images
+    Apply KNN Classifications on a list of train and test sets.
 
     Parameters
     ----------
@@ -346,12 +348,55 @@ def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
 
     return proj_train_list, proj_test_list
 
+def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_samples: int=10) -> np.ndarray:
+    """
+    Apply GMM Clustering on a list of (preprocessed) training set images
+
+    Parameters
+    ----------
+    `train_list` (`list[FaceDataset]`): the list of train datasets to be used to train the KNN classifier
+    `train` (`FaceDataset`): the original image set to be used to visualize the clusters
+    `n_comps` (`int`): the list of test datasets to be tested with the KNN classifier
+    `show_samples` (`int`) the number of example results to display after done, `0` for no output, default as `10`
+    
+    Returns
+    -------
+    `None`: 
+    """
+    for i in range(len(train_list)):
+        # Fit the train data on a GMM and predict
+        gmm = GaussianMixture(n_components=n_comps).fit(train_list[i].X)
+        cls_pred = gmm.predict(train_list[i].X)
+
+        # Randomly pick some images from each clusters to display
+        cls_idxs_list = []
+        for i in range(n_comps):
+            cls_idxs = [j for j in range(cls_pred.shape[0]) if cls_pred[j]==i]
+            cls_idxs_list.append(random.sample(cls_idxs, show_samples))
+
+        # Plot some example faces in each cluster
+        if show_samples > 0:
+            n_rows = n_comps
+            n_cols = show_samples
+            img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
+            fig = plt.figure(figsize=(16, 6))
+            for i in range(n_rows):
+                for j in range(n_cols):
+                    ax = fig.add_subplot(n_rows, n_cols, i*n_cols+j+1, xticks=[], yticks=[])
+                    ax.imshow(train.X[cls_idxs_list[i][j]].reshape(img_shape), cmap='gray')
+                    ax.set_xlabel('%d' % train.y[cls_idxs_list[i][j]])
+                    if j == 0:
+                        ax.set_ylabel('Cluster %d' % i)
+
+            plt.show()
+
+    return
 
 def main():
     # Display Settings
-    show_pca_result = True      # If we want to plot the PCA results
+    show_pca_result = False      # If we want to plot the PCA results
     show_num_samples = 0        # Number of example results to display after done, `0` for no output
-    show_lda_result = True      # If we want to plot the PCA results
+    show_lda_result = False      # If we want to plot the PCA results
 
     # Set destination paths
     repo_path = pathlib.Path(__file__).parent.parent.resolve()
@@ -364,6 +409,7 @@ def main():
     test_set = readImageData(data_path, set='test')
 
     # Apply PCA on 3D (which also included 2D) and visualize results
+    print('Started Task 1: PCA')
     plotPCA3DResults(train_set, show_plot=show_pca_result)
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
@@ -383,6 +429,7 @@ def main():
     print('Finished Task 1: PCA')
 
     # Apply LDA to reduce the dimensionalities of the original images
+    print('Started Task 2: LDA')
     lda_dims = [2, 3, 9]
     proj_train_list, proj_test_list = applyLDAs(lda_dims, train_set, test_set)
     # Visualize results
@@ -399,9 +446,13 @@ def main():
     test_set = readImageData(data_path, set='test')
     # Apply PCA preprocessing on all the images
     pca_dims = [80, 200]
-    proj_train_list, proj_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
-
+    prep_train_list, prep_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
+    print('PCA Pre-processed %d training images and %d test images' % (prep_train_list[0].X.shape[0], prep_test_list[0].X.shape[0]))
     
+    print('Started Task 3: GMM')
+    GMMClusterings(prep_train_list, train_set, n_comps=3)
+    print('Finished Task 3: GMM')
+
     print('Done')
     return
 
