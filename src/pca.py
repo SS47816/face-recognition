@@ -33,21 +33,21 @@ class FaceDataset:
         Arrtributes
         -----------
         `X_PIE` (`np.ndarray`): the PIE training set images
-        `y_PIE` (`np.ndarray`): the PIE training set labels
+        `y_PIE` (`np.array`): the PIE training set labels
         `X_MY` (`np.ndarray`): my_photo training set images
-        `y_MY` (`np.ndarray`): my_photo training set labels
+        `y_MY` (`np.array`): my_photo training set labels
         `X` (`np.ndarray`): the whole training set images
-        `y` (`np.ndarray`): the whole training set labels
+        `y` (`np.array`): the whole training set labels
         `name` (`str`): the name of the set, can be either `train` or `test`
         """
         self.name = name
         self.X_PIE = X_PIE
-        self.y_PIE = y_PIE
+        self.y_PIE = y_PIE.ravel()
         self.X_MY = X_MY
-        self.y_MY = y_MY
+        self.y_MY = y_MY.ravel()
         # Stack all image vectors together forming train and test sets
         self.X = np.vstack((self.X_PIE, self.X_MY))
-        self.y = np.vstack((self.y_PIE, self.y_MY))
+        self.y = np.concatenate((self.y_PIE, self.y_MY))
 
     @classmethod
     def split(cls, X: np.ndarray, y: np.ndarray, name :str='train'):
@@ -66,9 +66,9 @@ class FaceDataset:
         elif name == 'test':
             split_idx = -3
         X_PIE = X[:split_idx,:]
-        y_PIE = y[:split_idx,:]
+        y_PIE = y[:split_idx]
         X_MY = X[split_idx:,:]
-        y_MY = y[split_idx:,:]
+        y_MY = y[split_idx:]
         return cls(X_PIE, y_PIE, X_MY, y_MY, name)
 
 def readImageData(data_path: str, set: str='train', num_PIE_imgs: int=-1) -> FaceDataset:
@@ -262,9 +262,9 @@ def KNNClassification(train: FaceDataset, test: FaceDataset) -> np.ndarray:
     `np.ndarray`: classification error rates with a shape of `[2, 1]`
     """
     # Apply KNN classification
-    knn = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(train.X, train.y.ravel())
-    test_y_PIE_pred = knn.predict(test.X_PIE).reshape(-1, 1)
-    test_y_MY_pred = knn.predict(test.X_MY).reshape(-1, 1)
+    knn = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(train.X, train.y)
+    test_y_PIE_pred = knn.predict(test.X_PIE)
+    test_y_MY_pred = knn.predict(test.X_MY)
     # Print classification results
     # print('KNN Classification results on PIE test set:')
     # print(classification_report(test.y_PIE, test_y_PIE_pred))
@@ -348,8 +348,8 @@ def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
     for i in range(len(dims)):
         lda_list.append(LinearDiscriminantAnalysis(n_components=dims[i]))
         # Fit LDA on the images
-        lda_list[i].fit(train.X, train.y.ravel())
-        proj_train_X = lda_list[i].fit_transform(train.X, train.y.ravel())
+        lda_list[i].fit(train.X, train.y)
+        proj_train_X = lda_list[i].fit_transform(train.X, train.y)
         proj_test_X = lda_list[i].transform(test.X)
         proj_train_list.append(FaceDataset.split(proj_train_X, train.y, name='train'))
         proj_test_list.append(FaceDataset.split(proj_test_X, test.y, name='test'))
@@ -405,7 +405,7 @@ def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.nd
     error_rates = np.empty(shape=(2,0), dtype=float)
     for i in range(len(train_list)):
         for j in range(len(C_list)) :
-            svm = SVC(C=C_list[j], class_weight="balanced").fit(train_list[i].X, train_list[i].y.ravel())
+            svm = SVC(C=C_list[j], class_weight="balanced").fit(train_list[i].X, train_list[i].y)
             test_y_PIE_pred = svm.predict(test_list[i].X_PIE)
             test_y_MY_pred = svm.predict(test_list[i].X_MY)
 
@@ -416,11 +416,11 @@ def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.nd
             # print(classification_report(test_list[i].y_MY, test_y_MY_pred))
 
             # Collect results
-            print(test_y_PIE_pred.reshape(-1, 1).shape)
+            print(test_y_PIE_pred.shape)
             print(test_list[i].y_PIE.shape)
             error_rate = np.zeros((2,1))
-            error_rate[0, 0] = (test_y_PIE_pred.reshape(-1, 1) != test_list[i].y_PIE).sum() / test_y_PIE_pred.shape[0]
-            error_rate[1, 0] = (test_y_MY_pred.reshape(-1, 1) != test_list[i].y_MY).sum() / test_y_MY_pred.shape[0]
+            error_rate[0, 0] = (test_y_PIE_pred != test_list[i].y_PIE).sum() / test_y_PIE_pred.shape[0]
+            error_rate[1, 0] = (test_y_MY_pred != test_list[i].y_MY).sum() / test_y_MY_pred.shape[0]
             error_rates = np.append(error_rates, error_rate, axis=1)
 
     return error_rates
@@ -499,7 +499,7 @@ def main():
     svm_error_rates = SVMClassifications(pca_train_list, pca_test_list, C_list=C_list)
     print(svm_error_rates)
     print('Finished Task 4: SVM')
-
+    
 
     print('Done')
     return
