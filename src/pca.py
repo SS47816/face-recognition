@@ -6,8 +6,10 @@ import pandas as pd
 import cv2
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.mixture import GaussianMixture
+from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 
 class FaceDataset:
@@ -259,10 +261,16 @@ def KNNClassification(train: FaceDataset, test: FaceDataset) -> np.ndarray:
     -------
     `np.ndarray`: classification error rates with a shape of `[2, 1]`
     """
-    # Apply KNN classifications
+    # Apply KNN classification
     knn = KNeighborsClassifier(n_neighbors=3, weights='distance', metric='euclidean').fit(train.X, train.y.ravel())
     test_y_PIE_pred = knn.predict(test.X_PIE).reshape(-1, 1)
     test_y_MY_pred = knn.predict(test.X_MY).reshape(-1, 1)
+    # Print classification results
+    print('KNN Classification results on PIE test set:')
+    print(classification_report(test.y_PIE, test_y_PIE_pred))
+    print('KNN Classification results on MY test set:')
+    print(classification_report(test.y_MY, test_y_MY_pred))
+
     # Collect results
     error_rate = np.zeros((2,1))
     error_rate[0, 0] = (test_y_PIE_pred != test.y_PIE).sum() / test_y_PIE_pred.shape[0]
@@ -348,7 +356,7 @@ def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
 
     return proj_train_list, proj_test_list
 
-def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_samples: int=10) -> np.ndarray:
+def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_samples: int=10) -> None:
     """
     Apply GMM Clustering on a list of (preprocessed) training set images
 
@@ -367,7 +375,7 @@ def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_sa
         # Fit the train data on a GMM and predict
         gmm = GaussianMixture(n_components=n_comps).fit(train_list[i].X)
         cls_pred = gmm.predict(train_list[i].X)
-
+        print(cls_pred)
         # Randomly pick some images from each clusters to display
         cls_idxs_list = []
         for i in range(n_comps):
@@ -392,6 +400,29 @@ def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_sa
 
     return
 
+def SVMClassifications(train: FaceDataset, test: FaceDataset, C_list: list) -> np.ndarray:
+    
+    error_rates = np.empty(shape=(2,0), dtype=float)
+    for i in range(len(C_list)) :
+        print()
+        svm = SVC(C=C_list[i], class_weight="balanced").fit(train.X, train.y)
+        test_y_PIE_pred = svm.predict(test.X_PIE)
+        test_y_MY_pred = svm.predict(test.X_MY)
+
+        # Print classification results
+        print('KNN Classification results on PIE test set:')
+        print(classification_report(test.y_PIE, test_y_PIE_pred))
+        print('KNN Classification results on MY test set:')
+        print(classification_report(test.y_MY, test_y_MY_pred))
+
+        # Collect results
+        error_rate = np.zeros((2,1))
+        error_rate[0, 0] = (test_y_PIE_pred != test.y_PIE).sum() / test_y_PIE_pred.shape[0]
+        error_rate[1, 0] = (test_y_MY_pred != test.y_MY).sum() / test_y_MY_pred.shape[0]
+        error_rates = np.append(error_rates, error_rate, axis=1)
+
+    return error_rates
+
 def main():
     # Display Settings
     show_pca_result = False      # If we want to plot the PCA results
@@ -402,14 +433,14 @@ def main():
     repo_path = pathlib.Path(__file__).parent.parent.resolve()
     data_path = os.path.join(repo_path, 'data')
     print(data_path)
-    # data_path = '/home/ss/ss_ws/face-recognition/data'
 
     # Read 500 images from the train set and all from the test set
     train_set = readImageData(data_path, set='train', num_PIE_imgs=500)
     test_set = readImageData(data_path, set='test')
 
-    # Apply PCA on 3D (which also included 2D) and visualize results
+    
     print('Started Task 1: PCA')
+    # Apply PCA on 3D (which also included 2D) and visualize results
     plotPCA3DResults(train_set, show_plot=show_pca_result)
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
@@ -428,8 +459,9 @@ def main():
     showErrorRates(pca_dims, pca_error_rates)
     print('Finished Task 1: PCA')
 
-    # Apply LDA to reduce the dimensionalities of the original images
+    
     print('Started Task 2: LDA')
+    # Apply LDA to reduce the dimensionalities of the original images
     lda_dims = [2, 3, 9]
     proj_train_list, proj_test_list = applyLDAs(lda_dims, train_set, test_set)
     # Visualize results
@@ -441,16 +473,18 @@ def main():
     showErrorRates(lda_dims, lda_error_rates)
     print('Finished Task 2: LDA')
     
+
     # Read the whole train and test set (unlike the first time which we only sampled 500)
     train_set = readImageData(data_path, set='train')
     test_set = readImageData(data_path, set='test')
     # Apply PCA preprocessing on all the images
     pca_dims = [80, 200]
-    prep_train_list, prep_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
-    print('PCA Pre-processed %d training images and %d test images' % (prep_train_list[0].X.shape[0], prep_test_list[0].X.shape[0]))
+    pca_train_list, pca_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
+    print('PCA Pre-processed %d training images and %d test images' % (pca_train_list[0].X.shape[0], pca_test_list[0].X.shape[0]))
+    
     
     print('Started Task 3: GMM')
-    GMMClusterings(prep_train_list, train_set, n_comps=3)
+    GMMClusterings(pca_train_list, train_set, n_comps=3)
     print('Finished Task 3: GMM')
 
     print('Done')
