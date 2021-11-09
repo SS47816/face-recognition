@@ -266,10 +266,10 @@ def KNNClassification(train: FaceDataset, test: FaceDataset) -> np.ndarray:
     test_y_PIE_pred = knn.predict(test.X_PIE).reshape(-1, 1)
     test_y_MY_pred = knn.predict(test.X_MY).reshape(-1, 1)
     # Print classification results
-    print('KNN Classification results on PIE test set:')
-    print(classification_report(test.y_PIE, test_y_PIE_pred))
-    print('KNN Classification results on MY test set:')
-    print(classification_report(test.y_MY, test_y_MY_pred))
+    # print('KNN Classification results on PIE test set:')
+    # print(classification_report(test.y_PIE, test_y_PIE_pred))
+    # print('KNN Classification results on MY test set:')
+    # print(classification_report(test.y_MY, test_y_MY_pred))
 
     # Collect results
     error_rate = np.zeros((2,1))
@@ -400,34 +400,38 @@ def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_sa
 
     return
 
-def SVMClassifications(train: FaceDataset, test: FaceDataset, C_list: list) -> np.ndarray:
+def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.ndarray:
     
     error_rates = np.empty(shape=(2,0), dtype=float)
-    for i in range(len(C_list)) :
-        print()
-        svm = SVC(C=C_list[i], class_weight="balanced").fit(train.X, train.y)
-        test_y_PIE_pred = svm.predict(test.X_PIE)
-        test_y_MY_pred = svm.predict(test.X_MY)
+    for i in range(len(train_list)):
+        for j in range(len(C_list)) :
+            svm = SVC(C=C_list[j], class_weight="balanced").fit(train_list[i].X, train_list[i].y.ravel())
+            test_y_PIE_pred = svm.predict(test_list[i].X_PIE)
+            test_y_MY_pred = svm.predict(test_list[i].X_MY)
 
-        # Print classification results
-        print('KNN Classification results on PIE test set:')
-        print(classification_report(test.y_PIE, test_y_PIE_pred))
-        print('KNN Classification results on MY test set:')
-        print(classification_report(test.y_MY, test_y_MY_pred))
+            # Print classification results
+            # print('SVM Classification results on PIE test set:')
+            # print(classification_report(test_list[i].y_PIE, test_y_PIE_pred))
+            # print('SVM Classification results on MY test set:')
+            # print(classification_report(test_list[i].y_MY, test_y_MY_pred))
 
-        # Collect results
-        error_rate = np.zeros((2,1))
-        error_rate[0, 0] = (test_y_PIE_pred != test.y_PIE).sum() / test_y_PIE_pred.shape[0]
-        error_rate[1, 0] = (test_y_MY_pred != test.y_MY).sum() / test_y_MY_pred.shape[0]
-        error_rates = np.append(error_rates, error_rate, axis=1)
+            # Collect results
+            print(test_y_PIE_pred.reshape(-1, 1).shape)
+            print(test_list[i].y_PIE.shape)
+            error_rate = np.zeros((2,1))
+            error_rate[0, 0] = (test_y_PIE_pred.reshape(-1, 1) != test_list[i].y_PIE).sum() / test_y_PIE_pred.shape[0]
+            error_rate[1, 0] = (test_y_MY_pred.reshape(-1, 1) != test_list[i].y_MY).sum() / test_y_MY_pred.shape[0]
+            error_rates = np.append(error_rates, error_rate, axis=1)
 
     return error_rates
 
 def main():
     # Display Settings
+    show_error_rates = False    # If we want to plot the error rates for all algos
     show_pca_result = False      # If we want to plot the PCA results
-    show_num_samples = 0        # Number of example results to display after done, `0` for no output
+    show_pca_samples = 0        # Number of example results to display for PCA, `0` for no output
     show_lda_result = False      # If we want to plot the PCA results
+    show_gmm_samples = 0        # Number of example results to display for GMM, `0` for no output
 
     # Set destination paths
     repo_path = pathlib.Path(__file__).parent.parent.resolve()
@@ -445,7 +449,7 @@ def main():
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     pca_dims = [40, 80, 200]
-    proj_train_list, proj_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
+    proj_train_list, proj_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_pca_samples)
     
     # Apply KNN Classifications on the PCA preprocessed image lists
     pca_error_rates = KNNClassifications(proj_train_list, proj_test_list)
@@ -456,7 +460,8 @@ def main():
     pca_error_rates = np.append(pca_error_rates, baseline_error_rate, axis=1)
     
     # Visualize KNN classification error rates
-    showErrorRates(pca_dims, pca_error_rates)
+    if show_error_rates:
+        showErrorRates(pca_dims, pca_error_rates)
     print('Finished Task 1: PCA')
 
     
@@ -470,7 +475,8 @@ def main():
         plotProjectedData(proj_train_list[1].X_PIE, proj_train_list[1].X_MY)
 
     lda_error_rates = KNNClassifications(proj_train_list, proj_test_list)
-    showErrorRates(lda_dims, lda_error_rates)
+    if show_error_rates:
+        showErrorRates(lda_dims, lda_error_rates)
     print('Finished Task 2: LDA')
     
 
@@ -479,13 +485,21 @@ def main():
     test_set = readImageData(data_path, set='test')
     # Apply PCA preprocessing on all the images
     pca_dims = [80, 200]
-    pca_train_list, pca_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
+    pca_train_list, pca_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=0)
     print('PCA Pre-processed %d training images and %d test images' % (pca_train_list[0].X.shape[0], pca_test_list[0].X.shape[0]))
     
-    
+
     print('Started Task 3: GMM')
-    GMMClusterings(pca_train_list, train_set, n_comps=3)
+    GMMClusterings(pca_train_list, train_set, n_comps=3, show_samples=show_gmm_samples)
     print('Finished Task 3: GMM')
+
+
+    print('Started Task 4: SVM')
+    C_list = [0.01, 0.1, 1]
+    svm_error_rates = SVMClassifications(pca_train_list, pca_test_list, C_list=C_list)
+    print(svm_error_rates)
+    print('Finished Task 4: SVM')
+
 
     print('Done')
     return
