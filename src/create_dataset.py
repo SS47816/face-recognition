@@ -1,4 +1,5 @@
 import os
+import pathlib
 import random
 import shutil
 import numpy as np
@@ -73,6 +74,8 @@ def convertRGB2BW(folder_path) ->  None:
     """
     img_files = os.listdir(folder_path)
     for img_file in img_files:
+        if img_file == '.DS_Store':
+            continue
         img = cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE)
         cv2.imwrite(os.path.join(folder_path, img_file), img)
 
@@ -80,7 +83,7 @@ def convertRGB2BW(folder_path) ->  None:
 
 def main():
     # Define paths to the original PIE dataset and my_photo (please modify)
-    repo_path = '/home/ss/ss_ws/face-recognition'
+    repo_path = pathlib.Path(__file__).parent.parent.resolve()
     my_photo_path = os.path.join(repo_path, 'data/my_photo')
     # Define destination paths
     dataset_path = os.path.join(repo_path, 'data/PIE')

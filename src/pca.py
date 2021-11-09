@@ -1,10 +1,10 @@
 import os
+import pathlib
 import random
 import numpy as np
 import cv2
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
 
@@ -93,13 +93,17 @@ def readImageData(data_path: str, set: str='train', num_PIE_imgs: int=-1) -> Fac
         if subject_path == '.DS_Store':
             continue
         elif subject_path == 'my_photo':
-            # Load my_photo images 
+            # Load my_photo images
             for img_file in os.listdir(folder_path):
+                if img_file == '.DS_Store':
+                    continue
                 MY_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
                 MY_lables.append(int(0))
         else:
             # Load PIE images 
             for img_file in os.listdir(folder_path):
+                if img_file == '.DS_Store':
+                    continue
                 PIE_imgs.append(cv2.imread(os.path.join(folder_path, img_file), cv2.IMREAD_GRAYSCALE).reshape((1, -1)))
                 PIE_lables.append(int(subject_path))
                 idxs.append(idx)
@@ -205,18 +209,18 @@ def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: i
     """
     # Apply PCA on a list of dimensions
     pca_list = []
-    proj_X_train_list = []
-    proj_X_test_list = []
     rec_imgs_list = []
-    train_list = []
-    test_list = []
+    proj_train_list = []
+    proj_test_list = []
     for i in range(len(dims)):
         pca_list.append(PCA(dims[i]))
         # Fit PCA on the images
-        proj_X_train_list.append(pca_list[i].fit_transform(train.X))
-        proj_X_test_list.append(pca_list[i].transform(test.X))
+        proj_train_X = pca_list[i].fit_transform(train.X)
+        proj_test_X = pca_list[i].transform(test.X)
+        proj_train_list.append(FaceDataset.split(proj_train_X, train.y, -7, name='train'))
+        proj_test_list.append(FaceDataset.split(proj_test_X, train.y, -3, name='test'))
         # Reconstruct the images
-        rec_imgs_list.append(pca_list[i].inverse_transform(proj_X_train_list[i]))
+        rec_imgs_list.append(pca_list[i].inverse_transform(proj_train_X))
 
     # Visualize reconstructed images
     img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
@@ -234,7 +238,7 @@ def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: i
                 ax.imshow(rec_imgs_list[j][i, :].reshape(img_shape), cmap='gray')
             plt.show()
 
-    return proj_X_train_list, proj_X_test_list
+    return proj_train_list, proj_test_list
 
 def KNNClassification(train_set: FaceDataset, test_set: FaceDataset) -> np.ndarray:
     """
@@ -260,27 +264,24 @@ def KNNClassification(train_set: FaceDataset, test_set: FaceDataset) -> np.ndarr
 
     return error_rate
 
-def KNNClassifications(proj_X_train_list: list, proj_X_test_list: list, y_train: np.ndarray, y_test: np.ndarray) -> np.ndarray:
+def KNNClassifications(train_list: list, test_list: list) -> np.ndarray:
     """
     Apply KNN Classifications on the (preprocessed) images
 
     Parameters
     ----------
-    `train_set` (`FaceDataset`): the train data X to be used to train the KNN classifier
-    `test_set` (`FaceDataset`): the test data to be tested with the KNN classifier
+    `train_list` (`list[FaceDataset]`): the list of train datasets to be used to train the KNN classifier
+    `test_list` (`list[FaceDataset]`): the list of test datasets to be tested with the KNN classifier
     
     Returns
     -------
     `np.ndarray`: classification error rates with a shape of `[2, len(proj_X_train_list)]`
     """
-    error_rates = np.empty(shape=(2,0), dtype=np.float)
+    error_rates = np.empty(shape=(2,0), dtype=float)
     # For each dimension to be tested
-    for i in range(len(proj_X_train_list)):
-        # Construct datasets for classification
-        proj_train_set = FaceDataset.split(proj_X_train_list[i], y_train, -3, name='train')
-        proj_test_set = FaceDataset.split(proj_X_test_list[i], y_test, -3, name='test')
+    for i in range(len(train_list)):
         # Apply KNN classifications and store results
-        error_rates = np.append(error_rates, KNNClassification(proj_train_set, proj_test_set), axis=1)
+        error_rates = np.append(error_rates, KNNClassification(train_list[i], train_list[i]), axis=1)
 
     return error_rates
 
@@ -347,7 +348,10 @@ def main():
     show_lda_result = True      # If we want to plot the PCA results
 
     # Set destination paths
-    data_path = '/home/ss/ss_ws/face-recognition/data'
+    repo_path = pathlib.Path(__file__).parent.parent.resolve()
+    data_path = os.path.join(repo_path, 'data')
+    print(data_path)
+    # data_path = '/home/ss/ss_ws/face-recognition/data'
 
     # Read 500 images from the train set and all from the test set
     train_set = readImageData(data_path, set='train', num_PIE_imgs=500)
@@ -358,10 +362,10 @@ def main():
 
     # Apply PCA on 40, 80, 200 dimensions and show the reconstructed images
     pca_dims = [40, 80, 200]
-    proj_X_train_list, proj_X_test_list = applyPCAs(pca_dims, train_set.X, test_set.X, show_samples=show_num_samples)
+    proj_train_list, proj_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=show_num_samples)
     
     # Apply KNN Classifications on the PCA preprocessed image lists
-    pca_error_rates = KNNClassifications(proj_X_train_list, proj_X_test_list, train_set.y, test_set.y)
+    pca_error_rates = KNNClassifications(proj_train_list, proj_test_list)
 
     # Apply KNN Classification on the original images (as a baseline for comparison later)
     pca_dims.append(train_set.X.shape[1])
