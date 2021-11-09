@@ -289,7 +289,7 @@ def KNNClassifications(train_list: list, test_list: list) -> np.ndarray:
     
     Returns
     -------
-    `np.ndarray`: classification error rates with a shape of `[2, len(proj_X_train_list)]`
+    `np.ndarray`: classification error rates
     """
     error_rates = np.empty(shape=(2,0), dtype=float)
     # For each dimension to be tested
@@ -401,7 +401,19 @@ def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_sa
     return
 
 def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.ndarray:
+    """
+    Apply a series of SVM Classifications with different C params on a list of train and test sets.
+
+    Parameters
+    ----------
+    `train_list` (`list[FaceDataset]`): the list of train datasets to be used to train the KNN classifier
+    `test_list` (`list[FaceDataset]`): the list of test datasets to be tested with the KNN classifier
+    `C_list` (`list[float]`): the list of C values to be used in SVM Classifiers
     
+    Returns
+    -------
+    `np.ndarray`: classification error rates
+    """
     error_rates = np.empty(shape=(2,0), dtype=float)
     for i in range(len(train_list)):
         for j in range(len(C_list)) :
@@ -499,7 +511,7 @@ def main():
     svm_error_rates = SVMClassifications(pca_train_list, pca_test_list, C_list=C_list)
     print(svm_error_rates)
     print('Finished Task 4: SVM')
-    
+
 
     print('Done')
     return
