@@ -512,7 +512,7 @@ def main():
     svm_error_rates = SVMClassifications(pca_train_list, pca_test_list, C_list=C_list)
     print(svm_error_rates)
     print('Finished Task 4: SVM')
-
+    
 
     print('Done')
     return
