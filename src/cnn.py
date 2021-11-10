@@ -13,7 +13,7 @@ from torchvision import transforms, datasets
 # Set destination paths
 repo_path = pathlib.Path(__file__).parent.parent.resolve()
 data_path = os.path.join(repo_path, 'data/cnn')
-print(data_path)
+# print(data_path)
 
 classes = [x for x in os.listdir(os.path.join(data_path, 'train')) if x!='.DS_Store']
 print(classes)
@@ -33,20 +33,19 @@ testset = datasets.ImageFolder(root=os.path.join(data_path, 'test'), transform=d
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
 
 def imshow(img):
-    img = img / 2 + 0.5     # unnormalize
+    # img = img / 2 + 0.5     # unnormalize
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
-
 
 # get some random training images
 dataiter = iter(trainloader)
 images, labels = dataiter.next()
 
-# show images
-imshow(torchvision.utils.make_grid(images))
-# print labels
+# Show some training images and labels
 print(' '.join('%5s' % classes[labels[j]] for j in range(batch_size)))
+imshow(torchvision.utils.make_grid(images))
+
 
 # class SimpleCNN(nn.Module):
 #     def __init__(self):
