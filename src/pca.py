@@ -151,17 +151,19 @@ def plotProjectedData(proj_PIE_3d: np.ndarray, proj_MY_3d: np.ndarray) -> None:
     fig = plt.figure(figsize=plt.figaspect(0.5))
     # 2D Plot
     ax = fig.add_subplot(1, 2, 1)
-    ax.scatter(proj_PIE_3d[:, 0], proj_PIE_3d[:, 1], s = 10, c = 'c')
-    ax.scatter(proj_MY_3d[:, 0], proj_MY_3d[:, 1], s = 15, c = 'r')
+    ax.scatter(proj_PIE_3d[:, 0], proj_PIE_3d[:, 1], s = 10, c = 'c', label='PIE')
+    ax.scatter(proj_MY_3d[:, 0], proj_MY_3d[:, 1], s = 15, c = 'r', label='MY')
     ax.set_xlabel('Principle Axis 1')
     ax.set_ylabel('Principle Axis 2')
+    ax.legend()
     # 3D Plot
     ax = fig.add_subplot(1, 2, 2, projection='3d')
-    ax.scatter(proj_PIE_3d[:, 0], proj_PIE_3d[:, 1], proj_PIE_3d[:, 2], s = 10, c = 'c')
-    ax.scatter(proj_MY_3d[:, 0], proj_MY_3d[:, 1], proj_MY_3d[:, 2], s = 15, c = 'r')
+    ax.scatter(proj_PIE_3d[:, 0], proj_PIE_3d[:, 1], proj_PIE_3d[:, 2], s = 10, c = 'c', label='PIE')
+    ax.scatter(proj_MY_3d[:, 0], proj_MY_3d[:, 1], proj_MY_3d[:, 2], s = 15, c = 'r', label='MY')
     ax.set_xlabel('Principle Axis 1')
     ax.set_ylabel('Principle Axis 2')
     ax.set_zlabel('Principle Axis 3')
+    ax.legend()
     plt.show()
 
 def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
@@ -440,11 +442,11 @@ def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.nd
 
 def main():
     # Display Settings
-    show_error_rates = False    # If we want to plot the error rates for all algos
-    show_pca_result = False      # If we want to plot the PCA results
-    show_pca_samples = 0        # Number of example results to display for PCA, `0` for no output
-    show_lda_result = False      # If we want to plot the PCA results
-    show_gmm_samples = 0        # Number of example results to display for GMM, `0` for no output
+    show_error_rates = True     # If we want to plot the error rates for all algos
+    show_pca_result  = True     # If we want to plot the PCA results
+    show_pca_samples = 5        # Number of example results to display for PCA, `0` for no output
+    show_lda_result  = True     # If we want to plot the PCA results
+    show_gmm_samples = 10       # Number of example results to display for GMM, `0` for no output
 
     # Set destination paths
     repo_path = pathlib.Path(__file__).parent.parent.resolve()
@@ -512,7 +514,7 @@ def main():
     svm_error_rates = SVMClassifications(pca_train_list, pca_test_list, C_list=C_list)
     print(svm_error_rates)
     print('Finished Task 4: SVM')
-    
+
 
     print('Done')
     return
