@@ -414,28 +414,29 @@ def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.nd
     -------
     `np.ndarray`: classification error rates
     """
-    error_rates = np.empty(shape=(2,0), dtype=float)
-    for i in range(len(train_list)):
-        for j in range(len(C_list)) :
-            svm = SVC(C=C_list[j], class_weight="balanced").fit(train_list[i].X, train_list[i].y)
-            test_y_PIE_pred = svm.predict(test_list[i].X_PIE)
-            test_y_MY_pred = svm.predict(test_list[i].X_MY)
+    results = []
+    for i in range(len(C_list)):
+        error_rates = np.empty(shape=(2,0), dtype=float)
+        for j in range(len(train_list)) :
+            svm = SVC(C=C_list[i], class_weight="balanced").fit(train_list[j].X, train_list[j].y)
+            test_y_PIE_pred = svm.predict(test_list[j].X_PIE)
+            test_y_MY_pred = svm.predict(test_list[j].X_MY)
 
             # Print classification results
             # print('SVM Classification results on PIE test set:')
-            # print(classification_report(test_list[i].y_PIE, test_y_PIE_pred))
+            # print(classification_report(test_list[j].y_PIE, test_y_PIE_pred))
             # print('SVM Classification results on MY test set:')
-            # print(classification_report(test_list[i].y_MY, test_y_MY_pred))
+            # print(classification_report(test_list[j].y_MY, test_y_MY_pred))
 
             # Collect results
-            print(test_y_PIE_pred.shape)
-            print(test_list[i].y_PIE.shape)
             error_rate = np.zeros((2,1))
-            error_rate[0, 0] = (test_y_PIE_pred != test_list[i].y_PIE).sum() / test_y_PIE_pred.shape[0]
-            error_rate[1, 0] = (test_y_MY_pred != test_list[i].y_MY).sum() / test_y_MY_pred.shape[0]
+            error_rate[0, 0] = (test_y_PIE_pred != test_list[j].y_PIE).sum() / test_y_PIE_pred.shape[0]
+            error_rate[1, 0] = (test_y_MY_pred != test_list[j].y_MY).sum() / test_y_MY_pred.shape[0]
             error_rates = np.append(error_rates, error_rate, axis=1)
+        
+        results.append(error_rates)
 
-    return error_rates
+    return np.vstack(results)
 
 def main():
     # Display Settings
