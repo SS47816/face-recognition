@@ -49,28 +49,39 @@ def train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_pa
     model.to(device)
     loss_fn = nn.CrossEntropyLoss()
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    for epoch in range(n_epochs):  # loop over the dataset multiple times
+    loss_log = []
+    # Train the model for a number of epochs
+    for epoch in range(n_epochs):
         running_loss = 0.0
+        count = 0
         for i, data in enumerate(trainloader, 0):
-            # get the inputs; data is a list of [inputs, labels]
+            # Load a batch of training images
             inputs, labels = data[0].to(device), data[1].to(device)
-            # zero the parameter gradients
             optimizer.zero_grad()
-            # forward + backward + optimize
+            # Feed this batch into the model and predict
             outputs = model(inputs)
             loss = loss_fn(outputs, labels)
             loss.backward()
             optimizer.step()
-
-            # print statistics
-            report_freq = 128/batch_size
+            
+            # Update loss count
+            count += 1
             running_loss += loss.item()
-            if i % report_freq == report_freq-1:
-                print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / report_freq))
-                running_loss = 0.0
 
+        # Record the loss for each epoch trained
+        loss_log.append(running_loss/count)
+        print('Epoch [%d] loss: %.3f' % (epoch + 1, loss_log[-1]))
+
+    # Plot the loss for each epoch trained
+    fig, ax = plt.subplots()
+    x = np.arange(len(loss_log))
+    ax.plot(x, loss_log, marker='o', color='c', dashes=[4, 2], label='train')
+    ax.set_xlabel('epoch')
+    ax.set_ylabel('loss')
+    ax.legend()
+    plt.show()
     print('Finished Training')
 
     # Save model weights
@@ -150,9 +161,9 @@ def main():
 
     # Hyperparameters for training
     training    = True
-    batch_size  = 128
-    n_epochs    = 300
-    lr          = 1e-2
+    batch_size  = 256
+    n_epochs    = 1000
+    lr          = 1e-4
 
     # Training Process
     if training:
