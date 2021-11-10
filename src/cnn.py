@@ -23,8 +23,7 @@ class SimpleCNN(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc1(torch.flatten(x, 1)))
 
         return x
 
@@ -52,7 +51,7 @@ def train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_pa
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     loss_log = []
-    writer = SummaryWriter("Simple CNN: batch_size=%d lr=%f" % (batch_size, lr))
+    writer = SummaryWriter()
     # Train the model for a number of epochs
     for epoch in range(n_epochs):
         running_loss = 0.0
@@ -151,7 +150,6 @@ def main():
     # Define data argmentation processes
     data_transform = transforms.Compose([
         transforms.Grayscale(),
-        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
     ])
 
