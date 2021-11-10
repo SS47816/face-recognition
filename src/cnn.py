@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 from torchvision import transforms, datasets
-
+from torch.utils.tensorboard import SummaryWriter
 
 # Define the customized network
 class SimpleCNN(nn.Module):
@@ -52,6 +52,7 @@ def train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_pa
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     loss_log = []
+    writer = SummaryWriter("Simple CNN: batch_size=%d lr=%f" % (batch_size, lr))
     # Train the model for a number of epochs
     for epoch in range(n_epochs):
         running_loss = 0.0
@@ -73,15 +74,10 @@ def train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_pa
         # Record the loss for each epoch trained
         loss_log.append(running_loss/count)
         print('Epoch [%d] loss: %.3f' % (epoch + 1, loss_log[-1]))
+        # Plot the loss curve
+        writer.add_scalar('Loss/train', running_loss/count, epoch)
 
-    # Plot the loss for each epoch trained
-    fig, ax = plt.subplots()
-    x = np.arange(len(loss_log))
-    ax.plot(x, loss_log, marker='o', color='c', dashes=[4, 2], label='train')
-    ax.set_xlabel('epoch')
-    ax.set_ylabel('loss')
-    ax.legend()
-    plt.show()
+    writer.close()
     print('Finished Training')
 
     # Save model weights
@@ -163,7 +159,7 @@ def main():
     training    = True
     batch_size  = 256
     n_epochs    = 1000
-    lr          = 1e-4
+    lr          = 3e-4
 
     # Training Process
     if training:
