@@ -11,6 +11,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.mixture import GaussianMixture
 from sklearn.svm import SVC
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 class FaceDataset:
     """
@@ -194,9 +195,11 @@ def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
         fig = plt.figure(figsize=(16, 6))
         ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
         ax.imshow(pca_3.mean_.reshape(img_shape), cmap='gray')
+        ax.title.set_text('Mean Face')
         for i in range(3):
             ax = fig.add_subplot(1, 4, i + 2, xticks=[], yticks=[])
             ax.imshow(pca_3.components_[i].reshape(img_shape), cmap='gray')
+            ax.title.set_text('Eigen Face #%d' % (i+1))
         plt.show()
         
     return
@@ -318,8 +321,8 @@ def showErrorRates(x: list, error_rates: list) -> None:
     print(x)
     print(error_rates)
     fig, ax = plt.subplots()
-    line1, = ax.plot(x, error_rates[0], marker='o', color='c', dashes=[6, 2], label='PIE test set')
-    line2, = ax.plot(x, error_rates[1], marker='*', color='r', dashes=[4, 2], label='MY test set')
+    ax.plot(x, error_rates[0], marker='o', color='c', dashes=[6, 2], label='PIE test set')
+    ax.plot(x, error_rates[1], marker='*', color='r', dashes=[4, 2], label='MY test set')
     ax.set_xlabel('Image Dimensions')
     ax.set_ylabel('KNN Classification Error Rate')
     ax.legend()
@@ -396,18 +399,19 @@ def GMMClusterings(train_list: list, train: FaceDataset, n_comps: int=3, show_sa
                     ax.imshow(train.X[cls_idxs_list[i][j]].reshape(img_shape), cmap='gray')
                     ax.set_xlabel('%d' % train.y[cls_idxs_list[i][j]])
                     if j == 0:
-                        ax.set_ylabel('Cluster %d' % i)
+                        ax.set_ylabel('Cluster %d' % (i+1))
 
             plt.show()
 
     return
 
-def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.ndarray:
+def SVMClassifications(dims: list, C_list: list, train_list: list, test_list: list) -> np.ndarray:
     """
     Apply a series of SVM Classifications with different C params on a list of train and test sets.
 
     Parameters
     ----------
+    `dims` (`list[int]`): list of LDA dimensions to be tested
     `train_list` (`list[FaceDataset]`): the list of train datasets to be used to train the KNN classifier
     `test_list` (`list[FaceDataset]`): the list of test datasets to be tested with the KNN classifier
     `C_list` (`list[float]`): the list of C values to be used in SVM Classifiers
@@ -416,7 +420,7 @@ def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.nd
     -------
     `np.ndarray`: classification error rates
     """
-    results = []
+    result_list = []
     for i in range(len(C_list)):
         error_rates = np.empty(shape=(2,0), dtype=float)
         for j in range(len(train_list)) :
@@ -436,17 +440,31 @@ def SVMClassifications(train_list: list, test_list: list, C_list: list) -> np.nd
             error_rate[1, 0] = (test_y_MY_pred != test_list[j].y_MY).sum() / test_y_MY_pred.shape[0]
             error_rates = np.append(error_rates, error_rate, axis=1)
         
-        results.append(error_rates)
+        result_list.append(error_rates)
+
+    results = np.vstack(result_list)
+
+    fig, ax = plt.subplots()
+    markers = Line2D.filled_markers
+    m = 0
+    for i in range(len(C_list)):
+        ax.plot(dims, results[2*i], marker=markers[m], color='c', dashes=[6, 2], label='SVM_%.2f PIE test set' % C_list[i])
+        ax.plot(dims, results[2*i+1], marker=markers[m+1], color='r', dashes=[4, 2], label='SVM_%.2f MY test set' % C_list[i])
+        m += 2
+    ax.set_xlabel('Image Dimensions')
+    ax.set_ylabel('SVM Classification Error Rate')
+    ax.legend()
+    plt.show()
 
     return np.vstack(results)
 
 def main():
     # Display Settings
-    show_error_rates = True     # If we want to plot the error rates for all algos
-    show_pca_result  = True     # If we want to plot the PCA results
-    show_pca_samples = 5        # Number of example results to display for PCA, `0` for no output
-    show_lda_result  = True     # If we want to plot the PCA results
-    show_gmm_samples = 10       # Number of example results to display for GMM, `0` for no output
+    show_error_rates = False     # If we want to plot the error rates for all algos
+    show_pca_result  = False     # If we want to plot the PCA results
+    show_pca_samples = 0        # Number of example results to display for PCA, `0` for no output
+    show_lda_result  = False     # If we want to plot the PCA results
+    show_gmm_samples = 0       # Number of example results to display for GMM, `0` for no output
 
     # Set destination paths
     repo_path = pathlib.Path(__file__).parent.parent.resolve()
@@ -511,7 +529,7 @@ def main():
 
     print('Started Task 4: SVM')
     C_list = [0.01, 0.1, 1]
-    svm_error_rates = SVMClassifications(pca_train_list, pca_test_list, C_list=C_list)
+    svm_error_rates = SVMClassifications(pca_dims, C_list, pca_train_list, pca_test_list)
     print(svm_error_rates)
     print('Finished Task 4: SVM')
 
