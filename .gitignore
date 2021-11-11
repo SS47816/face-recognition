@@ -1,8 +1,6 @@
 runs/
 PIE/
 PIE.zip
-*.jpg
-*.jpeg
 *.DS_Store
 
 # Byte-compiled / optimized / DLL files
