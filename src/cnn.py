@@ -148,7 +148,7 @@ def test(model, model_path, device, data_path, data_transform, batch_size, class
         print("Accuracy for class {:5s} is: {:.1f} %".format(classname,
                                                        accuracy))
 
-    print('Error rate of the network on the %d test images: %d %%' % (total, 100 * (total - correct)/ total))
+    print('Error rate of the network on the %d test images: %.4f %%' % (total, 100*(total - correct)/total))
 
     return
 
