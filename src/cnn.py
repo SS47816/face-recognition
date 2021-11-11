@@ -27,12 +27,31 @@ class SimpleCNN(nn.Module):
 
         return x
 
+class LeNet5(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16*5*5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 21)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1) # flatten all dimensions except batch
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
 def imshow(img):
     npimg = img.cpu().numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
 
-def train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_path, device):
+def train(model, model_path, device, data_path, data_transform, batch_size, n_epochs, lr, classes):
 
     trainset = datasets.ImageFolder(root=os.path.join(data_path, 'train'), transform=data_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
@@ -44,7 +63,6 @@ def train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_pa
     # print(' '.join('%5s' % classes[labels[j]] for j in range(batch_size)))
     # imshow(torchvision.utils.make_grid(images))
 
-    model = SimpleCNN()
     model.to(device)
     loss_fn = nn.CrossEntropyLoss()
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
@@ -83,15 +101,14 @@ def train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_pa
     torch.save(model.state_dict(), model_path)
     return
 
-def test(batch_size, classes, data_transform, data_path, model_path, device):
+def test(model, model_path, device, data_path, data_transform, batch_size, classes):
     testset = datasets.ImageFolder(root=os.path.join(data_path, 'test'), transform=data_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=True, num_workers=4)
     
     # Load the trained model
-    model = SimpleCNN()
-    model.load_state_dict(torch.load(model_path))
     model.to(device)
-
+    model.load_state_dict(torch.load(model_path))
+    
     # Testing on some random testset images
     dataiter = iter(testloader)
     data = dataiter.next()
@@ -151,6 +168,7 @@ def main():
     data_transform = transforms.Compose([
         transforms.Grayscale(),
         transforms.ToTensor(),
+        # transforms.Normalize((0.5), (0.5)),
     ])
 
     # Hyperparameters for training
@@ -158,12 +176,16 @@ def main():
     batch_size  = 256
     n_epochs    = 1000
     lr          = 3e-4
+    
+    # Define model
+    # model = SimpleCNN()
+    model = LeNet5()
 
     # Training Process
     if training:
-        train(batch_size, n_epochs, lr, classes, data_transform, data_path, model_path, device)
+        train(model, model_path, device, data_path, data_transform, batch_size, n_epochs, lr, classes)
     # Testing Process
-    test(batch_size, classes, data_transform, data_path, model_path, device)
+    test(model, model_path, device, data_path, data_transform, batch_size, classes)
 
 if __name__ == "__main__":
     main()
