@@ -42,7 +42,20 @@ TensorBoard logs are saved in `runs/`
 Source codes are all stored in `src/`
 * `cnn.py`: run this file to train and test the CNN models
 * `conventional.py`: run this file to test all the conventional methods
-* `create_dataset.py`: helper functions to split the train/test datasets
+* `create_dataset.py`: helper functions to split the train/test datasets (you probably won't need this)
+
+To run the code:
+```bash
+# Aactivate the conda environment you just created
+conda activate pr
+
+# Run the first 4 algorithms
+python3 src/conventional.py
+
+# Run the CNN model (training and testing)
+python3 src/cnn.py
+
+```
 
 ### Results
 #### Q1. PCA for Feature Extraction, Visualization and Classification
