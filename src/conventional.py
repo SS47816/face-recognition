@@ -460,15 +460,15 @@ def SVMClassifications(dims: list, C_list: list, train_list: list, test_list: li
 
 def main():
     # Display Settings
-    show_error_rates = False     # If we want to plot the error rates for all algos
-    show_pca_result  = False     # If we want to plot the PCA results
-    show_pca_samples = 0        # Number of example results to display for PCA, `0` for no output
-    show_lda_result  = False     # If we want to plot the PCA results
-    show_gmm_samples = 0       # Number of example results to display for GMM, `0` for no output
+    show_error_rates = True     # If we want to plot the error rates for all algos
+    show_pca_result  = True     # If we want to plot the PCA results
+    show_pca_samples = 3        # Number of example results to display for PCA, `0` for no output
+    show_lda_result  = True     # If we want to plot the PCA results
+    show_gmm_samples = 10       # Number of example results to display for GMM, `0` for no output
 
     # Set destination paths
     repo_path = pathlib.Path(__file__).parent.parent.resolve()
-    data_path = os.path.join(repo_path, 'data')
+    data_path = os.path.join(repo_path, 'data/conventional')
     print(data_path)
 
     # Read 500 images from the train set and all from the test set
