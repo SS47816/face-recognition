@@ -27,6 +27,7 @@ class SimpleCNN(nn.Module):
 
         return x
 
+# Define the customized LeNet-5 network
 class LeNet5(nn.Module):
     def __init__(self):
         super().__init__()
@@ -46,13 +47,44 @@ class LeNet5(nn.Module):
         x = self.fc3(x)
         return x
 
+
 def imshow(img):
+    """
+    Visualize the given image 
+
+    Parameters
+    ----------
+    `img`: image to be visualized
+
+    Returns
+    -------
+    `None`: 
+    """
     npimg = img.cpu().numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
+    return
 
 def train(model, model_path, device, data_path, data_transform, batch_size, n_epochs, lr, classes):
+    """
+    Train the given model with the given parameters and dataset
 
+    Parameters
+    ----------
+    `model`: network model to be trained
+    `model_path`: path to save the model weights after the training
+    `device`: device to be used for training
+    `data_path`: path to the dataset location
+    `data_transform`: defined transforms to be conducted on the input images
+    `batch_size`: training batch size
+    `n_epochs`: number of epochs to train
+    `lr`: learning rate
+    `classes`: list of class label names
+
+    Returns
+    -------
+    `None`: 
+    """
     trainset = datasets.ImageFolder(root=os.path.join(data_path, 'train'), transform=data_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
 
@@ -102,6 +134,23 @@ def train(model, model_path, device, data_path, data_transform, batch_size, n_ep
     return
 
 def test(model, model_path, device, data_path, data_transform, batch_size, classes):
+    """
+    Test the given model with the given weights and dataset
+
+    Parameters
+    ----------
+    `model`: network model to be trained
+    `model_path`: path to load the model weights from
+    `device`: device to be used for testing
+    `data_path`: path to the dataset location
+    `data_transform`: defined transforms to be conducted on the input images
+    `batch_size`: testing batch size
+    `classes`: list of class label names
+
+    Returns
+    -------
+    `None`: 
+    """
     testset = datasets.ImageFolder(root=os.path.join(data_path, 'test'), transform=data_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=True, num_workers=4)
     
