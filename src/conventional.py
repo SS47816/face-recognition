@@ -4,7 +4,6 @@ import random
 import numpy as np
 import pandas as pd
 import cv2
-from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -179,8 +178,9 @@ def PCA(X: np.ndarray, correlation: bool=False, sort: bool=True) -> tuple:
     
     Returns
     -------
+        `np.array`: mu
         `np.array`: eigenvalues
-        `np.array`: eigenvectors
+        `np.ndarray`: eigenvectors
     """
     mu = np.mean(X, axis=0)
     X_norm = X - mu
@@ -211,15 +211,9 @@ def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
     `None`
     """
     # Apply PCA on 3D (which also included 2D)
-    # pca_3 = PCA(3).fit(train.X)
-    # proj_PIE_3d = pca_3.transform(train.X_PIE)
-    # proj_MY_3d = pca_3.transform(train.X_MY)
     mu, eigenvalues, eigenvectors = PCA(train.X)
-    print(mu.shape)
-    print(eigenvalues.shape)
-    print(eigenvectors.shape)
-    proj_PIE_3d = np.dot(train.X_PIE, eigenvectors[:, :3])
-    proj_MY_3d = np.dot(train.X_MY, eigenvectors[:, :3])
+    proj_PIE_3d = np.dot((train.X_PIE - mu), eigenvectors[:, :3]).real
+    proj_MY_3d = np.dot((train.X_MY - mu), eigenvectors[:, :3]).real
     
     # Visualize results
     if show_plot:
@@ -256,19 +250,21 @@ def applyPCAs(dims: list, train: FaceDataset, test: FaceDataset, show_samples: i
     `list[FaceDataset]`: list of test set images after PCA dimensionality reduction
     """
     # Apply PCA on a list of dimensions
-    pca_list = []
     rec_imgs_list = []
     proj_train_list = []
     proj_test_list = []
+    mu, eigenvalues, eigenvectors = PCA(train.X)
+
     for i in range(len(dims)):
-        pca_list.append(PCA(dims[i]))
         # Fit PCA on the images
-        proj_train_X = pca_list[i].fit_transform(train.X)
-        proj_test_X = pca_list[i].transform(test.X)
+        eigen_vecs = eigenvectors[:, :dims[i]]
+        proj_train_X = np.dot((train.X - mu), eigen_vecs).real
+        proj_test_X = np.dot((test.X - mu), eigen_vecs).real
         proj_train_list.append(FaceDataset.split(proj_train_X, train.y, name='train'))
         proj_test_list.append(FaceDataset.split(proj_test_X, test.y, name='test'))
         # Reconstruct the images
-        rec_imgs_list.append(pca_list[i].inverse_transform(proj_train_X))
+        rec_imgs = np.dot((train.X - mu), np.dot(eigen_vecs, eigen_vecs.T)) + mu
+        rec_imgs_list.append(rec_imgs.real)
 
     # Visualize reconstructed images
     img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
