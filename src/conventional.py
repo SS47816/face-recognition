@@ -167,6 +167,36 @@ def plotProjectedData(proj_PIE_3d: np.ndarray, proj_MY_3d: np.ndarray) -> None:
     ax.legend()
     plt.show()
 
+def PCA(X: np.ndarray, correlation: bool=False, sort: bool=True) -> tuple:
+    """ 
+    Perform PCA on the input data
+
+    Parameters
+    ----------
+        `X` (`np.ndarray`): input data 
+        `correlation` (`bool`): differentiate between using `np.cov()` or `np.corrcoef()`， `False` for `np.cov()`
+        `sort` (`bool`): if sorting is enabled, default to `True`
+    
+    Returns
+    -------
+        `np.array`: eigenvalues
+        `np.array`: eigenvectors
+    """
+    mu = np.mean(X, axis=0)
+    X_norm = X - mu
+    if correlation:
+        S = np.corrcoef(X_norm.T)
+    else:
+        S = np.cov(X_norm.T)
+    eigenvalues, eigenvectors = np.linalg.eig(S)
+    
+    if sort:
+        sort = eigenvalues.argsort()[::-1]
+        eigenvalues = eigenvalues[sort]
+        eigenvectors = eigenvectors[:, sort]
+
+    return mu, eigenvalues, eigenvectors
+
 def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
     """
     Apply the train data to fit the PCA on 3D and plot the results in 2D and 3D
@@ -181,10 +211,15 @@ def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
     `None`
     """
     # Apply PCA on 3D (which also included 2D)
-    pca_3 = PCA(3)
-    pca_3.fit(train.X)
-    proj_PIE_3d = pca_3.transform(train.X_PIE)
-    proj_MY_3d = pca_3.transform(train.X_MY)
+    # pca_3 = PCA(3).fit(train.X)
+    # proj_PIE_3d = pca_3.transform(train.X_PIE)
+    # proj_MY_3d = pca_3.transform(train.X_MY)
+    mu, eigenvalues, eigenvectors = PCA(train.X)
+    print(mu.shape)
+    print(eigenvalues.shape)
+    print(eigenvectors.shape)
+    proj_PIE_3d = np.dot(train.X_PIE, eigenvectors[:, :3])
+    proj_MY_3d = np.dot(train.X_MY, eigenvectors[:, :3])
     
     # Visualize results
     if show_plot:
@@ -194,11 +229,11 @@ def plotPCA3DResults(train: FaceDataset, show_plot: bool=True) -> None:
         img_shape = np.array([np.sqrt(train.X.shape[1]), np.sqrt(train.X.shape[1])], dtype=int)
         fig = plt.figure(figsize=(16, 6))
         ax = fig.add_subplot(1, 4, 1, xticks=[], yticks=[])
-        ax.imshow(pca_3.mean_.reshape(img_shape), cmap='gray')
+        ax.imshow(mu.reshape(img_shape), cmap='gray')
         ax.title.set_text('Mean Face')
         for i in range(3):
             ax = fig.add_subplot(1, 4, i + 2, xticks=[], yticks=[])
-            ax.imshow(pca_3.components_[i].reshape(img_shape), cmap='gray')
+            ax.imshow(eigenvectors[:, i].reshape(img_shape).real, cmap='gray')
             ax.title.set_text('Eigen Face #%d' % (i+1))
         plt.show()
         
