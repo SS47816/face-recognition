@@ -2,11 +2,9 @@ import os
 import pathlib
 import random
 import numpy as np
-import pandas as pd
 import cv2
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.mixture import GaussianMixture
 from sklearn.svm import SVC
 import matplotlib.pyplot as plt
@@ -381,7 +379,7 @@ def LDA(X: np.ndarray, y: np.ndarray, sort: bool=True) -> tuple:
     mean_vectors = []
     # Compute the mean vectors
     for cls in classes:
-        mean_vectors.append(np.mean(X[y==cls], axis=0))
+        mean_vectors.append(np.mean(X[y == cls], axis=0))
 
     # Compute the scatter matrix within classes
     S_W = np.zeros((X.shape[1], X.shape[1]))
@@ -389,17 +387,17 @@ def LDA(X: np.ndarray, y: np.ndarray, sort: bool=True) -> tuple:
         sc_mat = np.zeros((X.shape[1], X.shape[1]))                 
         for img_vec in X[y == cl]:
             img_vec, mean_vec = img_vec.reshape(X.shape[1], 1), mean_vec.reshape(X.shape[1], 1)
-            sc_mat += (img_vec - mean_vec).dot((img_vec - mean_vec).T)
+            sc_mat += np.dot((img_vec - mean_vec), (img_vec - mean_vec).T)
         S_W += sc_mat 
 
     # Compute the scatter matrix within classes
     mu = np.mean(X, axis=0)
     S_B = np.zeros((X.shape[1], X.shape[1]))
     for i, mean_vec in enumerate(mean_vectors):  
-        n = X[y==i+1,:].shape[0]
+        n = X[y == i+1, :].shape[0]
         mean_vec = mean_vec.reshape(X.shape[1], 1)
         mu = mu.reshape(X.shape[1], 1)
-        S_B += n * (mean_vec - mu).dot((mean_vec - mu).T)
+        S_B += n*(mean_vec - mu).dot((mean_vec - mu).T)
 
     # Solve for eigen values and eigen vectors
     eigenvalues, eigenvectors = np.linalg.eig(np.linalg.inv(S_W).dot(S_B))
@@ -427,7 +425,6 @@ def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
     `list[FaceDataset]`: list of test set images after LDA dimensionality reduction
     """
     # Apply LDA on a list of dimensions
-    # lda_list = []
     mu, eigenvalues, eigenvectors = LDA(train.X, train.y)
 
     proj_train_list = []
@@ -578,6 +575,11 @@ def main():
     print('Finished Task 1: PCA')
 
     
+    # Read the whole train and test set (unlike the first time which we only sampled 500)
+    train_set = readImageData(data_path, set='train')
+    test_set = readImageData(data_path, set='test')
+
+
     print('Started Task 2: LDA')
     # Apply LDA to reduce the dimensionalities of the original images
     lda_dims = [2, 3, 9]
@@ -593,9 +595,6 @@ def main():
     print('Finished Task 2: LDA')
     
 
-    # Read the whole train and test set (unlike the first time which we only sampled 500)
-    train_set = readImageData(data_path, set='train')
-    test_set = readImageData(data_path, set='test')
     # Apply PCA preprocessing on all the images
     pca_dims = [80, 200]
     pca_train_list, pca_test_list = applyPCAs(pca_dims, train_set, test_set, show_samples=0)
