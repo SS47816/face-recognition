@@ -172,15 +172,15 @@ def PCA(X: np.ndarray, correlation: bool=False, sort: bool=True) -> tuple:
 
     Parameters
     ----------
-        `X` (`np.ndarray`): input data 
-        `correlation` (`bool`): differentiate between using `np.cov()` or `np.corrcoef()`， `False` for `np.cov()`
-        `sort` (`bool`): if sorting is enabled, default to `True`
+    `X` (`np.ndarray`): input data 
+    `correlation` (`bool`): differentiate between using `np.cov()` or `np.corrcoef()`， `False` for `np.cov()`
+    `sort` (`bool`): if sorting is enabled, default to `True`
     
     Returns
     -------
-        `np.array`: mu
-        `np.array`: eigenvalues
-        `np.ndarray`: eigenvectors
+    `np.ndarray`: mu
+    `np.ndarray`: eigenvalues
+    `np.ndarray`: eigenvectors
     """
     mu = np.mean(X, axis=0)
     X_norm = X - mu
@@ -361,6 +361,56 @@ def showErrorRates(x: list, error_rates: list) -> None:
 
     return
 
+def LDA(X: np.ndarray, y: np.ndarray, sort: bool=True) -> tuple:
+    """ 
+    Perform LDA on the input data
+
+    Parameters
+    ----------
+    `X` (`np.ndarray`): input data
+    `y` (`np.ndarray`): input data labels
+    `sort` (`bool`): if sorting is enabled, default to `True`
+    
+    Returns
+    -------
+    `np.ndarray`: mu
+    `np.ndarray`: eigenvalues
+    `np.ndarray`: eigenvectors
+    """
+    classes = np.unique(y)
+    mean_vectors = []
+    # Compute the mean vectors
+    for cls in classes:
+        mean_vectors.append(np.mean(X[y==cls], axis=0))
+
+    # Compute the scatter matrix within classes
+    S_W = np.zeros((X.shape[1], X.shape[1]))
+    for cl, mean_vec in zip(classes, mean_vectors):
+        sc_mat = np.zeros((X.shape[1], X.shape[1]))                 
+        for img_vec in X[y == cl]:
+            img_vec, mean_vec = img_vec.reshape(X.shape[1], 1), mean_vec.reshape(X.shape[1], 1)
+            sc_mat += (img_vec - mean_vec).dot((img_vec - mean_vec).T)
+        S_W += sc_mat 
+
+    # Compute the scatter matrix within classes
+    mu = np.mean(X, axis=0)
+    S_B = np.zeros((X.shape[1], X.shape[1]))
+    for i, mean_vec in enumerate(mean_vectors):  
+        n = X[y==i+1,:].shape[0]
+        mean_vec = mean_vec.reshape(X.shape[1], 1)
+        mu = mu.reshape(X.shape[1], 1)
+        S_B += n * (mean_vec - mu).dot((mean_vec - mu).T)
+
+    # Solve for eigen values and eigen vectors
+    eigenvalues, eigenvectors = np.linalg.eig(np.linalg.inv(S_W).dot(S_B))
+
+    if sort:
+        sort = eigenvalues.argsort()[::-1]
+        eigenvalues = eigenvalues[sort]
+        eigenvectors = eigenvectors[:, sort]
+
+    return mu, eigenvalues, eigenvectors
+
 def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
     """
     Apply the train data to fit a series of LDAs with different dimensions and show the reconstructed images
@@ -377,16 +427,15 @@ def applyLDAs(dims: list, train: FaceDataset, test: FaceDataset) -> tuple:
     `list[FaceDataset]`: list of test set images after LDA dimensionality reduction
     """
     # Apply LDA on a list of dimensions
-    lda_list = []
+    # lda_list = []
+    mu, eigenvalues, eigenvectors = LDA(train.X, train.y)
+
     proj_train_list = []
     proj_test_list = []
-
     for i in range(len(dims)):
-        lda_list.append(LinearDiscriminantAnalysis(n_components=dims[i]))
-        # Fit LDA on the images
-        lda_list[i].fit(train.X, train.y)
-        proj_train_X = lda_list[i].fit_transform(train.X, train.y)
-        proj_test_X = lda_list[i].transform(test.X)
+        eigen_vecs = eigenvectors[:, :dims[i]]
+        proj_train_X = np.dot(train.X, eigen_vecs).real
+        proj_test_X = np.dot(test.X, eigen_vecs).real
         proj_train_list.append(FaceDataset.split(proj_train_X, train.y, name='train'))
         proj_test_list.append(FaceDataset.split(proj_test_X, test.y, name='test'))
 
@@ -492,8 +541,8 @@ def SVMClassifications(dims: list, C_list: list, train_list: list, test_list: li
 def main():
     # Display Settings
     show_error_rates = True     # If we want to plot the error rates for all algos
-    show_pca_result  = True     # If we want to plot the PCA results
-    show_pca_samples = 3        # Number of example results to display for PCA, `0` for no output
+    show_pca_result  = False     # If we want to plot the PCA results
+    show_pca_samples = 0        # Number of example results to display for PCA, `0` for no output
     show_lda_result  = True     # If we want to plot the PCA results
     show_gmm_samples = 10       # Number of example results to display for GMM, `0` for no output
 
